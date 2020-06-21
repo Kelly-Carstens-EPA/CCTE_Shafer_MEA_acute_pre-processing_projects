@@ -1,12 +1,15 @@
 # function to calculate the percent change values
 # result is dat2
-collapsePlateData <- function(main.output.dir) {
+collapsePlateData <- function(main.output.dir, dataset_title) {
   
   # read the data from the most recent dat1 RData file
-  data_files <- list.files(path = path.expand(paste0(main.output.dir,"/output")), pattern = paste0(dataset_title,"_dat1_"), recursive = F, full.names = T)
-  data_file <- data_files[order(basename(data_files), decreasing = T)[1]] # get the most recent data file
-  cat("\nLoading",data_file,"...")
-  load(data_file)
+  cat("\nLoading...\n")
+  dat1 <- get_latest_dat(lvl = "dat1",dataset_title)
+  
+  # data_files <- list.files(path = path.expand(paste0(main.output.dir,"/output")), pattern = paste0(dataset_title,"_dat1_"), recursive = F, full.names = T)
+  # data_file <- data_files[order(basename(data_files), decreasing = T)[1]] # get the most recent data file
+  # cat("\nLoading",data_file,"...")
+  # load(data_file)
   
   cat("\nCollapsing treated and baseline data...")
   dat1[, date_plate := paste(experiment.date, plate.id ,sep = "_")] # don't want to just use plate.id, since it could have been re-used
@@ -40,9 +43,9 @@ collapsePlateData <- function(main.output.dir) {
     }
     
     # get the  columns we need (drop the settings data, as well as run_type)
-    usecols <- c("tcpl_acsn","apid","experiment.date","plate.id","well","coli","rowi", "activity_value", "wllq","srcf","wllq_notes","files_log")
+    usecols <- c("acsn","apid","experiment.date","plate.id","well","coli","rowi", "activity_value", "wllq","srcf","wllq_notes","files_log")
     
-    platedat <- merge(bdat[,..usecols], tdat[, ..usecols], by = c("tcpl_acsn","apid","experiment.date","plate.id","well","coli","rowi","files_log"), 
+    platedat <- merge(bdat[,..usecols], tdat[, ..usecols], by = c("acsn","apid","experiment.date","plate.id","well","coli","rowi","files_log"), 
                       suffixes = c(".b",".t"))
     
     # calculate the percent change in activity
@@ -58,13 +61,13 @@ collapsePlateData <- function(main.output.dir) {
     platedat[, srcf := paste(srcf.b, srcf.t, sep = ";")]
     
     # just get the columns we need
-    add.dat <- platedat[, .(acsn = tcpl_acsn, apid, experiment.date, plate.id, coli, rowi, wllq, wllq_notes, rval, srcf, files_log)]
+    add.dat <- platedat[, .(acsn, apid, experiment.date, plate.id, coli, rowi, wllq, wllq_notes, rval, srcf, files_log)]
     dat2 <- rbind(dat2, add.dat)
     rm(add.dat)
   }
   
-  # document which dat1 file is being used
-  dat2[, "dat1" := basename(data_file)]
+  # document which dat1 file is being used (loaded from get_latest_dat)
+  dat2[, "dat1" := basename(RData_files_used)]
 
   # save the data as .RData
   filename <- file.path(main.output.dir, "output",paste0(dataset_title,"_dat2_",as.character.Date(Sys.Date()),".RData"))

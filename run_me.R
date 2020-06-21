@@ -3,14 +3,13 @@
 ###################################################################################
 start.dir <- "L:/Lab/NHEERL_MEA/"
 dataset_title <- "" # e.g. "name2020"
-root_output_dir <- "L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl/" # where the dataset_title folder will be created
 select.neural.stats.files <- F # select new neural stats files, or use the files in the most recent neural_stats_files_log?
 select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
 run.type.tag.location <- 5 # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
 spidmap_file <- "L:/Lab/NHEERL_MEA/Project - DNT 2019/All Assays_list_toxcast_OECD 20190524.xlsx"
 use_sheet <- "MEA Acute Conc Res" # sheet name in spidmap_file
 # optional adjustsment; usually can use defaults:
-parameter_set_type <- "post_july_2016" # use "pre_july_2016" if your endpoints include 'Half Width at Half Height of Cross Correlation' instead of 'Width...'
+root_output_dir <- "L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl/" # where the dataset_title folder will be created
 override_wllq_checks <- FALSE # set to TRUE only if you have already verified your wllq updates
 plate.id.tag.location <- numeric(0) # only update this if you have to, if your dataset does not include plate.id.tag in file headers
 ###################################################################################
@@ -19,7 +18,6 @@ plate.id.tag.location <- numeric(0) # only update this if you have to, if your d
 
 library(data.table)
 library(readxl)
-library(tcpl)
 
 # set up folders and working directory
 if (!dir.exists(file.path(root_output_dir,dataset_title))) dir.create(file.path(start.dir,dataset_title))
@@ -33,7 +31,7 @@ scripts <- scripts[!grepl("run_me\\.R",scripts) & !grepl("wllt_conc_formalizatio
 sapply(scripts, source)
 
 # loading some information for the funtions to reference
-get_acsn_map(type = parameter_set_type) # load the acsn map with the appropriate endpoints
+get_acsn_map() # load the acsn map
 
 # select input files to use, store files in .txt file
 if (select.neural.stats.files) {
@@ -66,19 +64,20 @@ extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.t
 # ---------------------------------------------------------------- 
 
 # view dat1
-load(file = paste0("output/",dataset_title,"_dat1_",as.character.Date(Sys.Date()),".RData"))
+dat1 <- get_latest_dat(lvl = "dat1", dataset_title)
 str(dat1)
-dat1[, .N/length(unique(dat1$tcpl_acsn)), by = "wllq_notes"]
+dat1[, .N/length(unique(dat1$acsn)), by = "wllq_notes"]
+# view all experiment.date's and plate.id's. Are they any NA/missing labels?
 rm(dat1)
 
 # collapse the plate data by calculating the percent change in activity (dat2)
-collapsePlateData(main.output.dir)
+collapsePlateData(main.output.dir, dataset_title)
 # OUTPUT --------------------------------------------------------- 
 # 
 # ---------------------------------------------------------------- 
 
 # look at data so far
-load(file = paste0("output/",dataset_title,"_dat2_",as.character.Date(Sys.Date()),".RData"))
+dat2 <- get_latest_dat(lvl = "dat2", dataset_title)
 dat2[wllq==1, summary(rval)]
 # OUTPUT --------------------------------------------------------- 
 # 
@@ -102,10 +101,11 @@ combineNeuralAndCyto(cytodat, main.output.dir, dataset_title)
 rm(cytodat)
 
 # load dat3 and finalize it
-load(file = paste0("output/",dataset_title,"_dat3_",as.character.Date(Sys.Date()),".RData"))
-dat4 <- dat3
-rm(dat3)
+dat4 <- get_latest_dat(lvl = "dat3", dataset_title)
+dat4[, dat2 := NULL]
+dat4[, dat3 := basename(RData_files_used)]
 str(dat4)
+
 
 # FINALIZE WLLQ
 
@@ -136,7 +136,7 @@ title(main = paste0("Percent Change in Mean Firing rate\nin Control wells of ",d
 # yes/no, it appears that the PICRO, TTX, LYSIS were added before the second treatment
 # rename the treatment in the wells as needed
 
-# for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Visually confirm if correct, adjust where needed
+# for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to refect this
 
 # for Cell Titer Blue assay:
 stripchart(rval ~ treatment, dat4[wllq==1 & treatment %in% c("DMSO","PICRO","TTX","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acsn)],
@@ -177,32 +177,41 @@ stripchart(rval ~ treatment, dat4[wllq==0 & treatment %in% c("DMSO","PICRO","TTX
 
 
 
-# CALCULATE PERCENT OF TOTAL LDH (verify wllq, treatments first)
-dat4 <- processLDH(dat4, use_half_lysis = T)
-# can look at values and plot to see if any 1/2 Lysis median control wells look concerning
-plot(dat4[grepl("LDH",acsn) & wllq == 1 & !is.na(as.numeric(conc)), .(log10(as.numeric(conc)), rval)], xlab = "log10(conc)", main = "LDH Percent of Total LDH by conc")
+# PREPARE LDH P WELLS (must verify wllq, treatments first)
+dat4 <- prepare_LDH_p_wells(dat4)
+plot(dat4[grepl("LDH",acsn) & wllq == 1 & !is.na(as.numeric(conc)), .(log10(as.numeric(conc)), rval)], xlab = "log10(conc)", main = "LDH Blank-Corrected Values by conc")
+
+
+# ASSIGN SPIDS
+spidmap <- as.data.table(read_excel(spidmap_file, sheet = use_sheet))
+names(spidmap)
+setnames(spidmap, old = "NCCT ID", new = "spid")
+setnames(spidmap, old = "Chemical ID", new = "treatment")
+setdiff(unique(dat4$treatment), unique(spidmap$treatment))
+# [1]   
+dat4 <- merge(x = dat4, y = spidmap[, c("spid", "treatment")], all.x = TRUE, by = "treatment")
+
+# assign spids for the non-registered control compounds, e.g.: "Tritonx100" "Bicuculline"  "DMSO" "PICRO" "TTX" "MEDIA"
+dat4[is.na(spid),unique(treatment)]
+# [1] 
+dat4[grepl("DMSO",treatment), spid := "DMSO"]
+dat4[treatment == "Media", spid := "Media"]
+dat4[treatment == "PICRO", spid := "Picrotoxin"]
+dat4[treatment == "TTX", spid := "Tetrodotoxin"]
+dat4[grepl("Lysis",treatment), spid := "Tritonx100"]
+dat4[grepl("Lysis",treatment), unique(conc), by = "treatment"]
+unique(dat4$spid) # confirm no NA spids
 
 
 # ASSIGN WLLT
-# for neural stats endpoints:
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")), unique(treatment)]
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & treatment == "DMSO", wllt := "n"]
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & treatment == "Lysis", wllt := "x"] # only positve control for cytotox assays
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & treatment == "PICRO", wllt := "p"] # gain of signal positive control
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & treatment == "TTX", wllt := "m"] # loss of signal control
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & treatment == "Media", wllt := ""]
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & is.na(wllt), unique(treatment)]
-dat4[!(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & is.na(wllt), wllt := "t"]
 
-# for cytotox endpoints
-dat4[(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")), unique(treatment)]
-dat4[grepl("Lysis",treatment) & acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB"), wllt := "p"] # Lysis, 1/2 Lysis, TTX/Lysis can all be labelled "p"
-dat4[treatment == "DMSO" & acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB"), wllt := "n"]
-dat4[treatment == "PICRO" & acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB"), wllt := "z"] # same for BIC
-dat4[treatment == "TTX" & acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB"), wllt := ""]
-dat4[treatment == "Media" & acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB"), wllt := ""]
-dat4[(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & is.na(wllt), unique(treatment)]
-dat4[(acsn %in% c("NHEERL_MEA_acute_LDH","NHEERL_MEA_acute_AB")) & is.na(wllt), wllt := "t"]
+# make sure all non-tested spids are in 
+# "DMSO" "Media"         "Picrotoxin"    "Tetrodotoxin" "Tritonx100" "Bicuculline"
+# make sure there are no NA spids
+dat4[,unique(spid)]
+dat4 <- assign_wllt(dat4)
+
+dat4[spid == "Media" & grepl("(AB)|(LDH)",acsn)] # empty, there are no media wells here
 dat4[,unique(wllt)]
 # 
 
@@ -264,34 +273,8 @@ dat4[, sort(unique(conc))]
 dat4[, conc := as.numeric(conc)]
 
 
-# ASSIGN SPIDS
-spidmap <- as.data.table(read_excel(spidmap_file, sheet = use_sheet))
-names(spidmap)
-setnames(spidmap, old = "NCCT ID", new = "spid")
-setnames(spidmap, old = "Chemical ID", new = "treatment")
-setdiff(unique(dat4$treatment), unique(spidmap$treatment))
-# [1]   
-dat4 <- merge(x = dat4, y = spidmap[, c("spid", "treatment")], all.x = TRUE, by = "treatment")
-
-# assign spids for the non-registered control compounds, e.g.: "Tritonx100" "Bicuculline"  "DMSO" "PICRO" "TTX" "MEDIA"
-dat4[is.na(spid),unique(treatment)]
-# [1] 
-dat4[grepl("DMSO",treatment), spid := "DMSO"]
-dat4[treatment == "Media", spid := "Media"]
-dat4[treatment == "PICRO", spid := "Picrotoxin"]
-dat4[treatment == "TTX", spid := "Tetrodotoxin"]
-dat4[grepl("Lysis",treatment), spid := "Tritonx100"]
-dat4[grepl("Lysis",treatment), unique(conc), by = "treatment"]
-unique(dat4$spid) # confirm no NA spids
-
-
 # ASSIGN ACID
-# holding off on this, until I get NHEERL_MEA_acute_cross_correlation_WHM registered
-# # get acid, via invitrodb
-# tcplConf(user = "***REMOVED***", pass = ***REMOVED***, db='invitrodb', drvr='MySQL', host = "ccte-mysql-res.epa.gov")
-# shafer.assays <- tcplLoadAcid(fld = "asid",val=20,add.fld = "acsn")
-# mea.acute <- shafer.assays[grepl("MEA_acute",acnm)]
-# dat4 <- merge(dat4, mea.acute[, .(acsn,acid)], by = "acsn")
+dat4 <- add_acid(dat4)
 
 
 # check that all data is there, nothing is missing
@@ -318,11 +301,7 @@ title(main = paste0("All Points (except AB) for ",dataset_title))
 createWllqSummary(dat4, dataset_title)
 
 # save dat4
-dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acsn, wllt, wllq, wllq_notes, rval, srcf, files_log, dat2)]
+dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acsn, acid, wllt, wllq, wllq_notes, rval, srcf, dat3)]
 save(dat4, file = file.path(main.output.dir, paste0("output/",dataset_title,"_dat4_",as.character.Date(Sys.Date()),".RData")))
-
-# save a copy of dat4 with just the mc0 columns
-assign(paste0(dataset_title,"_mc0"), value = dat4[, .(spid, apid, rowi, coli, conc, acsn, wllt, wllq, srcf, rval)])
-save(list = c(paste0(dataset_title,"_mc0")), file = file.path(main.output.dir, paste0("output/",dataset_title,"_mc0_",as.character.Date(Sys.Date()),".RData")))
 
 # you're done!

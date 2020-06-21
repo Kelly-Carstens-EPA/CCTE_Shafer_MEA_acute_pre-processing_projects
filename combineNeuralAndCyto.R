@@ -3,9 +3,11 @@
 combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
 
   # read the data from the most recent file in main.ouput.dir
-  dat2_files <- list.files(path = paste0(main.output.dir,"/output"), pattern = paste0("_dat2_"), recursive = F, full.names = T)
-  dat2_file <- dat2_files[order(basename(dat2_files), decreasing = T)[1]] # get the most recent file
-  load(dat2_file)
+  cat("\nLoading...\n")
+  dat2 <- get_latest_dat(lvl = "dat2",dataset_title)
+  # dat2_files <- list.files(path = paste0(main.output.dir,"/output"), pattern = paste0("_dat2_"), recursive = F, full.names = T)
+  # dat2_file <- dat2_files[order(basename(dat2_files), decreasing = T)[1]] # get the most recent file
+  # load(dat2_file)
   
   # create a date_plate column to keep track of unique plates
   dat2[, date_plate := paste(experiment.date,plate.id,sep = "_")]
@@ -13,7 +15,7 @@ combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
   
   # throw warning if cytodat and dat2 have some unshared plates
   cyto_only_date_plate <- setdiff(unique(cytodat$date_plate), unique(dat2$date_plate))
-  if (length(cyto_only_date_plate)) warning(paste0("The following date_plate's are only found in cytodat (and not in dat2): ",paste0(cyto_only_date_plate,"\nWllq will be set to 1 for these plates.",collapse=", ")))
+  if (length(cyto_only_date_plate)) warning(paste0("The following date_plate's are only found in cytodat (and not in dat2): ",paste0(cyto_only_date_plate,collapse=", "),"\nWllq will be set to 1 for all wells on these LDH/AB plates."))
   dat2_only_date_plate <- setdiff(unique(dat2$date_plate),unique(cytodat$date_plate))
   if (length(dat2_only_date_plate)) stop(paste0("The following date_plate's are only found in dat2 (and not in cytodat): ",paste0(dat2_only_date_plate,collapse=", ")))
   
@@ -53,7 +55,7 @@ combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
     rm(add.dat)
   }
   
-  dat3[, dat2 := basename(dat2_file)]
+  dat3[, "dat2" := basename(RData_files_used)]
   
   # get the wllq for cytodat, using mean firing rate acsn data rows
   wllq_summary <- dat2[, .(wllq = ifelse(unique(wllq) == 0, 0, 1), wllq_notes = paste0(unique(wllq_notes), collapse="")), by = c("plate.id","experiment.date","rowi","coli")]
@@ -69,8 +71,8 @@ combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
   
   usecols <- intersect(names(dat3), names(cytodat))
   dat3 <- rbind(dat3[,..usecols], cytodat[,..usecols])
-  
   dat3[, rval := as.numeric(rval)]
+  dat3[, date_plate := NULL]
   
   file_name <- paste0(main.output.dir,"/output/",dataset_title,"_dat3_",as.character.Date(Sys.Date()),".RData")
   save(dat3, file = file_name)

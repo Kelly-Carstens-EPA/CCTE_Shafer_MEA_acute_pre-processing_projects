@@ -103,6 +103,11 @@ checkForAllParameters <- function(filei, file_col1, file_col2) {
   # check if the data includes all of the wanted acitivity measure
   missing_paramaters <- setdiff(acsn_map$file_acsn, file_col1[(well.averages.rowi + 2):(well.averages.rowi + next.blank.row.dist - 2)])
   
+  # if only missing one or the other of 'Half Width at Half Height of Cross-Correlation' or 'Width at Half Height of Cross-Correlation', that is okay
+  if (length(missing_paramaters) == 1 && missing_paramaters %in% c("Half Width at Half Height of Cross-Correlation","Width at Half Height of Cross-Correlation")) {
+    missing_paramaters <- c()
+  }
+  
   if(length(missing_paramaters) > 0) {
     paste_parameters <- paste0(missing_paramaters, collapse = ", ")
     message <- paste0(basename(filei), " is missing ",paste_parameters)

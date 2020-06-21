@@ -1,6 +1,69 @@
 # processing LDH data to get percent of total LDH values
 
-processLDH <- function(dat4, use_half_lysis = T) {
+prepare_LDH_p_wells <- function(dat4) {
+  
+  LDH_dat <- dat4[grepl("LDH",acsn)]
+  
+  # get a summary of the Lysis wells available for each apid
+  apid_pwells <- LDH_dat[grepl("LDH",acsn) & grepl("(ysis)|(LYSIS)",treatment), 
+                      .(pwells = paste0(sort(unique(treatment)),collapse=","), any_wllq1 = ifelse(1 %in% unique(wllq),1,0)), by = "apid"]
+  
+  # for apid that have at least one ½ Lysis well with wllq=1, multiply the ½ Lysis values by 2 and set wllt = "p"
+  half.lysis.plates <- apid_pwells[grepl("½", pwells) & any_wllq1 == 1, apid]
+  LDH_dat[grepl("LDH",acsn) & apid %in% half.lysis.plates & grepl("½",treatment), 
+       `:=`(treatment = paste0("2 * ",treatment), rval = 2*rval, wllt = "p")]
+  
+  # for these plates, set wllt for full lysis wells as "x". We don't want these to be part of the "p" wells on these plates
+  # LDH_dat <- LDH_dat[!(apid %in% half.lysis.plates & grepl("(ysis)|(LYSIS)",treatment) & !grepl("½",treatment))]
+  LDH_dat[apid %in% half.lysis.plates & grepl("(ysis)|(LYSIS)",treatment) & !grepl("½",treatment), wllt := "x"]
+  
+  # for apid with no ½ Lysis well with wllq=1, label full Lysis wells as "p"
+  LDH_dat[apid %in% apid_pwells[!grepl("½", pwells) & any_wllq1 == 1, apid] & grepl("(ysis)|(LYSIS)",treatment), wllt := "p"]
+  
+  if (length(apid_pwells[!grepl("½", pwells) & any_wllq1 == 1, apid]) > 1) {
+    cat("The following apid's do not have any ½ Lysis wells with wllq=1. Full Lysis wells will be used instead\n")
+    cat(sort(apid_pwells[!grepl("½", pwells) & any_wllq1 == 1, apid]), sep = "\n")
+  }
+  
+  cat("Treatments assigned to wllt 'p' for each apid:\n")
+  pwell_summary <- LDH_dat[wllt == "p" & wllq == 1, .(LDH_trts_in_p_wells = paste0(sort(unique(treatment)),collapse=","), .N), by = "apid"]
+  print(pwell_summary)
+  
+  # check if any apid does not have any lysis wells, or none with wllq = 1
+  # or, if I grep'ed the wrong treatment name "ysis" or "LYSIS" above
+  no_p_apid <- setdiff(unique(LDH_dat$apid), unique(pwell_summary$apid))
+  if (length(no_p_apid) > 0) {
+    cat("The following apid's do not have any Lysis wells with wllq=1.\n")
+    cat(no_p_apid, sep = "\n")
+  }
+  
+  # LDH positive control wells - remove these wells, because I'm not sure how to assign the conc, wllt (can't be 'p') or spid
+  # might add back in the future
+  LDH_dat <- LDH_dat[!(treatment %in% c("1:250 LDH","1:2500 LDH"))]
+  
+  # plot the results for visualization
+  yrange <- LDH_dat[, range(rval, na.rm = T)]
+  boxplot(rval ~ apid, LDH_dat[wllq == 1 & !(wllt %in% c("p","x"))], ylim = yrange, main = "LDH Blank-Corrected values by apid, where wllq=1")
+  stripchart(rval ~ apid, LDH_dat[wllt == "p" & wllq == 1],
+             vertical = T, add = T,col = "gray")
+  stripchart(V1 ~ apid, LDH_dat[wllt == "p" & wllq == 1, median(rval), by = "apid"],
+             vertical = T, add = T,col = "blue")
+  legend(x = "topleft", legend = c("p wells","median p wells"), pch = c(0,0), col = c("gray","blue"), bg = "transparent")
+  
+  # summary of median 1/2 lysis wells by apid
+  cat("Summary of median p wells by apid:\n")
+  print(LDH_dat[wllt == "p" & wllq == 1, .(pval = median(rval)), by = "apid"])
+  
+  # replace previous LDH data with new LDH_dat
+  dat4 <- dat4[acsn != "NHEERL_MEA_acute_LDH"]
+  dat4 <- rbind(dat4, LDH_dat, fill = T) # dat4 might not have wllt column yet
+  return(dat4)
+
+}
+
+
+# (deprecated function, not using this)
+calculate_per_total_LDH <- function(dat4, use_half_lysis = T) {
   
   # !note that I need the wllq assignments before I can do this, so get do it right after creating cytodat
   # Also good to verify treatments before doing this
@@ -72,21 +135,3 @@ processLDH <- function(dat4, use_half_lysis = T) {
   dat4 <- rbind(dat4, LDH_dat)
   return(dat4)
 }
-
-
-# Alamar Blue
-# want to normalize by whatever is a DMSO control.
-
-# question: will the trt assignment of LDH and AB wells every change from what is in file?
-# a - yes, at least for AB
-# q - what are the options for normalization?
-
-# for AB, just set DMSO to n, then bval.apid.nwlls.med, then resp as resp.fc = function(aeids) {
-# 
-# e1 <- bquote(dat[J(.(aeids)), resp := cval/bval])
-# list(e1)
-# 
-# }
-
-# For LDH, I could, set 1/2 Lysis wells to "n", then set bval to median of "n" wells, then resp = cval/bval
-# Or, set 1/2 Lysis wells to "p", then set bval to 0 (not an option), then use resp = (cval - bval)/pval * 100

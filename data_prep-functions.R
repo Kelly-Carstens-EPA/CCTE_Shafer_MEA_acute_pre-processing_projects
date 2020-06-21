@@ -31,16 +31,13 @@ getTagPhraseIndex <- function(char_vector, grep_tagPhrases, errorifmissing = T, 
 # getTagPhraseIndex(cvector, "hi", errorifmissing = T)
 # # throws an error, since checkMultiple default is T
 
-get_acsn_map <- function(type = "post_july_2016") {
-  # preferably, we might load these in tcpl as acsn's in the future
-  file_cross_correlation_half_height_parameter <- switch(type,
-                                                    "pre_july_2016" = "Half Width at Half Height of Cross-Correlation",
-                                                    "post_july_2016" = 'Width at Half Height of Cross-Correlation',
-                                                    stop("must enter a valid type ('pre_july_2016' or 'post_july_2016'"))
-  tcpl_cross_correlation_half_height_parameter <- switch(type,
-                                                         "pre_july_2016" = 'NHEERL_MEA_acute_cross_correlation_HWHM',
-                                                         "post_july_2016" = 'NHEERL_MEA_acute_cross_correlation_WHM',
-                                                         stop("must enter a valid type ('pre_july_2016' or 'post_july_2016'"))
+get_acsn_map <- function() {
+  # conversation with Tim 06/16/2020 - 
+  # Half Width at Half Height of Cross-Correlation and 
+  # Width at Half Height of Cross-Correlation are the same thing. 
+  # Axion just misnamed it at first time.
+  # Half Width at Half Height of Cross-Correlation is the correct name
+
   file_acsn_using = c(
     'Number of Spikes',
     'Mean Firing Rate (Hz)',
@@ -55,8 +52,9 @@ get_acsn_map <- function(type = "post_july_2016") {
     'Number of Elecs Participating in Burst - Avg',
     'Network Burst Percentage',
     'Area Under Cross-Correlation',
-    file_cross_correlation_half_height_parameter,
-    'Synchrony Index'
+    'Synchrony Index',
+    'Half Width at Half Height of Cross-Correlation',
+    'Width at Half Height of Cross-Correlation'
   )
   
   tcpl_acsn <- c(
@@ -73,22 +71,20 @@ get_acsn_map <- function(type = "post_july_2016") {
     'NHEERL_MEA_acute_bursting_electrodes_number_mean',
     'NHEERL_MEA_acute_network_burst_percentage',
     'NHEERL_MEA_acute_cross_correlation_area',
-    tcpl_cross_correlation_half_height_parameter,
-    'NHEERL_MEA_acute_synchrony_index'
+    'NHEERL_MEA_acute_synchrony_index',
+    'NHEERL_MEA_acute_cross_correlation_HWHM',
+    'NHEERL_MEA_acute_cross_correlation_HWHM'
   )
   
   acsn_map <- data.table(file_acsn_using, tcpl_acsn)
   assign("acsn_map",acsn_map,envir = .GlobalEnv)
 }
 # acsn_map <- get_acsn_map()
-# write.csv(acsn_map, file = "~/mea_acute/test_output/acsn_map1.csv")
+# write.csv(acsn_map, file = "neural_stats_endpoint_to_tcpl_acsn_map.csv", row.names = T)
 
 
 fileToLongdat <- function(filei, run.type.tag.location,
-                          plate.id.tag.location = numeric(0), include.settings = F) {
-  
-  # possible limitations:
-  # - if tag phrase is different from Well.Averages
+                          plate.id.tag.location = numeric(0), include.all.settings = F) {
   
   file_scan <- scan(file = filei, what = character(), sep = "\n", blank.lines.skip = F, quiet=T) # empty lines will be just ""
   file_col1 <- sapply(file_scan, function(x) strsplit(x, split = ",")[[1]][1], USE.NAMES = F) # empty lines will be NA
@@ -156,8 +152,10 @@ fileToLongdat <- function(filei, run.type.tag.location,
   
   analysis.start <- headdat[grepl("Analysis Start",file_col1), as.numeric(file_col2)]
   analysis.duration <- headdat[grepl("Analysis Duration",file_col1), as.numeric(file_col2)]
+  setting_min.num.spks.network.burst <- headdat[grepl("Minimum Number of Spikes \\(network bursts\\)",file_col1), as.numeric(file_col2)]
+  setting_axis.version <- headdat[grepl("AxIS Version",file_col1), paste0(unique(file_col2),collapse=",")]
   
-  if (include.settings) {
+  if (include.all.settings) {
     
     headdat[is.na(file_col1), file_col1 := ""] # just to standardize. I'm not sure how to control if empty comes up as NA or ""
     headdat[is.na(file_col2), file_col2 := ""]
@@ -213,6 +211,9 @@ fileToLongdat <- function(filei, run.type.tag.location,
   # add the analysis timing data
   longdat[, `:=`(analysis_start = analysis.start, analysis_duration = analysis.duration)]
   
+  # add other settings data
+  longdat[, `:=`("setting_min.num.spks.network.burst" = setting_min.num.spks.network.burst, "setting_axis.version" = setting_axis.version)]
+  
   
   # SET THE WELL QUALITY
   
@@ -249,6 +250,7 @@ fileToLongdat <- function(filei, run.type.tag.location,
   
   # add in the tcpl_acsn. Unwanted parameters will be dropped
   longdat <- merge(longdat, acsn_map, by.x = c("file_acsn"), by.y = c("file_acsn_using"))
+  setnames(longdat, old = "tcpl_acsn", new = "acsn")
   longdat[, file_acsn := NULL] # remove unneeded column. Can always add back with get_acsn_map
   
   cat(paste0("\nProcessed ",basename(filei)))
