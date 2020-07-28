@@ -2,6 +2,8 @@
 extractAllData <- function(output.dir, dataset_title, run.type.tag.location, append = F, files_log = "",
                            plate.id.tag.location = numeric(0)) {
   
+  cat("\n\nLevel 1 - Extract All Data:\n")
+  
   # load the exisitng data, if any
   if (append) {
     # read the data from the most recent dat RData file
@@ -23,7 +25,7 @@ extractAllData <- function(output.dir, dataset_title, run.type.tag.location, app
   new_files_basenames <- sort(setdiff(basename(all_files), completed_files))
   new_files <- all_files[basename(all_files) %in% new_files_basenames]
   
-  cat("\nReading data from files...")
+  cat("\nReading data from files...\n")
   newdat <- list()
   for (filei in new_files) {
     add.dat <- tryCatch(fileToLongdat(filei, run.type.tag.location, plate.id.tag.location = plate.id.tag.location),
@@ -40,9 +42,10 @@ extractAllData <- function(output.dir, dataset_title, run.type.tag.location, app
   dat1 <- rbind(dat1, newdat)
   outfile <- paste0(output.dir, "/output/",dataset_title,"_dat1_",as.character.Date(Sys.Date()),".RData")
   save(dat1, file = outfile)
-  cat("\n",outfile, " is ready.\n",sep="")
+  cat("\n",basename(outfile), " is ready.\n",sep="")
   
   # print summary of wllq changes
+  cat("Summary of dates/plates with wllq=0 at Level 1:\n")
   print(dat1[wllq == 0, .(wllq_set_to_zero = paste0(sort(unique(well)),collapse=",")), by = c("experiment.date","plate.id")][order(experiment.date, plate.id)])
   
 }

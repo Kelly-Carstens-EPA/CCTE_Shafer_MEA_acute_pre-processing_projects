@@ -24,8 +24,8 @@ checkFileNames <- function(run.type.tag.location, check.dir, dataset_title, file
   }
   else {
     cat("\nThe following files appear to be named incorrectly:\n")
+    print(misnamed.files.table)
   }
-  return(misnamed.files.table)
 }
 
 

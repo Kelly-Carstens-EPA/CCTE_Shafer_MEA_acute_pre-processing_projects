@@ -2,24 +2,6 @@
 # this is better because it is more robust to slight changes in the placement of the data in the sheet
 # which is particularly important now that I need down to row H for LDH data
 
-# function to  look up index of value in a data frame
-#  there probably is a more efficient, data table way to do this...
-returnindex = function(value, mydata) {
-  for (i in 1:nrow(mydata)) {
-    for (j in 1:ncol(mydata)) {
-      if (is.na(mydata[i,j])) {
-        next
-      }
-      if (as.character(mydata[i,j]) == as.character(value)) {
-        return(c(i,j))
-      }
-    }
-  }
-  # print("could not find index in data frame")
-  return(NULL)
-}
-
-
 # uses the list of possible tab names to get the AB or LDH data from excel sheet
 findTabData <- function(sourcefile, assay = c("AB", "LDH")) {
   
@@ -35,7 +17,7 @@ findTabData <- function(sourcefile, assay = c("AB", "LDH")) {
   if (length(tabName) != 1) {
     tabName <- readline(prompt = paste0("Enter name of sheet for ",tabNames[1]," in ", basename(sourcefile)," : "))
   }
-  my_data <- as.data.table(read_excel(sourcefile, sheet = tabName, col_names = FALSE))
+  my_data <- as.data.table(read_excel(sourcefile, sheet = tabName, range = "A1:AX55", col_names = paste0("col",1:50)))
   return(my_data)
 }
 
@@ -46,6 +28,9 @@ valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type) {
   
   tag_instances_cols <- dat_dt[, lapply(.SD, function(x) sum(grepl(tagPhrase,x))>=3), .SDcols = names(dat_dt)]
   dat_tag_col <- which(unlist(tag_instances_cols,use.names=F))[1] # just look at the first column with 3 instances of tagPhrase
+  if(length(dat_tag_col) == 0 || is.na(dat_tag_col)) {
+    stop(paste0("Tag Phrase '",tagPhrase,"' not found.\n"))
+  }
   use_rows <- grep(tagPhrase, unlist(dat_dt[, dat_tag_col, with = F]))[1:3] # just using first 3 instances, since other calculations may have been done below
   tag_dat <- data.table()
   for (tag_rowi in use_rows) {
@@ -58,15 +43,22 @@ valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type) {
     add.dat[, "plate.id" := paste0("MW",plate.id)]
     if (length(plate.id) == 0) stop(paste0("plate id not found for"))
     
-    # quick check for NA values on the current plate, in the main plate wells
-    if (any(is.na(add.dat[Row %in% c("A","B","C","D","E","F") & coli %in% 1:8]))) {
-      cat(paste0("\n Some ",cyto_type," ",value.name," on ",plate.id,"are NA\n"))
-      print(dcast(add.dat[,.(Row,coli,rval)], Row ~ coli, value.var = "rval"))
+    # check for NA values on the current plate (except for those we excpect to be NA)
+    if (value.name == "treatment") {
+      test_for_na <- any(is.na(add.dat[Row %in% LETTERS[1:6] & coli %in% 1:8]))
+    }
+    else {
+      test_for_na <- any(is.na(add.dat[(Row %in% LETTERS[1:6] & coli %in% 1:8) | (Row=="G" & coli %in% 4:5) | (Row=="H" & coli %in% 1:6)]))
+    }
+    if (test_for_na) {
+      cat(paste0("\n Some ",cyto_type," ",value.name," on ",plate.id," are NA:\n"))
+      print(dcast(add.dat[,c("Row","coli",value.name), with = F], Row ~ coli, value.var = value.name))
       check <- readline(prompt = "Do you wish to continue anyways? (y/n): ")
       if (!check %in% c("Y","y","Yes","yes")) {
-        stop()
+        stop("cytotox data collection aborted.")
       }
     }
+    
     tag_dat <- rbind(tag_dat, add.dat)
     rm(add.dat)
   }
@@ -75,7 +67,7 @@ valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type) {
 
 getAssayData <- function(cyto_type, sourcefile) {
   
-  cat("\n",cyto_type, "")
+  cat(cyto_type, "\n")
   
   assay_dat_dt <- findTabData(sourcefile, cyto_type)
   
@@ -89,20 +81,26 @@ getAssayData <- function(cyto_type, sourcefile) {
   longdat <- merge(treatment_dat[!is.na(Row)], conc_dat[!is.na(Row)], by = c("Row","coli","plate.id"), fill = T, all = T)
   longdat <- merge(longdat, value_dat[!is.na(Row)], by = c("Row","coli","plate.id"), fill = T, all = T)
   
-  # assign the acsn
-  acsn <- switch(cyto_type, "LDH" = "NHEERL_MEA_acute_LDH", "AB" = "NHEERL_MEA_acute_AB")
-  longdat[, "acsn" := acsn]
+  # assign the acnm
+  acnm <- acsn_map[acsn == cyto_type, acnm]
+  if (length(acnm) == 0) {
+    warning(paste0(cyto_type," not found in acsn_map. Setting acnm to ",cyto_type," as placeholder.\n"))
+    acnm <- cyto_type
+  }
+  longdat[, "acnm" := acnm]
   
   # check that there are 3 unique plate id
   plates <- unique(longdat$plate.id) # this is important for correct merging of trt, conc, rvals
-  cat(plates)
+  cat(c(plates),"\n")
   if (length(plates) != 3) stop(paste0("Something is off with plates in ",basename(sourcefile), " ",cyto_type))
   
-  if(cyto_type == "AB") {
-    num_negative <- longdat[rval < 0, .N]
-    if(num_negative > 0) cat("\nsome values are negative. These will be set to 0")
+  num_negative <- longdat[rval < 0, .N]
+  if(num_negative > 0) {
+    cat(paste0("some values are negative. These will be set to 0\n"))
     longdat[rval < 0, rval := 0.0]
   }
+  
+  # check for NA values, in any field
   
   return(longdat)
 }
@@ -111,10 +109,10 @@ getAssayData <- function(cyto_type, sourcefile) {
 getFileCytoData <- function(sourcefile) {
   
   # get the experiment date from Plate 1
-  plate1_dat <- as.data.frame(read_excel(sourcefile, sheet = "Plate 1", col_names = F))
-  exp_date_index <- returnindex("Experiment ID", plate1_dat)
+  plate1_dat <- as.data.frame(read_excel(sourcefile, sheet = "Plate 1", range = "A1:J10", col_names = paste0("col",1:10)))
+  exp_date_index <- which(plate1_dat == "Experiment ID", arr.ind = T) # returns a 2-element vector of the row and col index
   experiment_date <- plate1_dat[exp_date_index[1], (exp_date_index[2] + 1)]
-  if (experiment_date == "") stop(paste0("Can't find experiment date for ",sourcefile))
+  if (is.null(experiment_date) || experiment_date == "") stop(paste0("Can't find experiment date in ",sourcefile))
   
   AB_dat <- getAssayData("AB",sourcefile)
   LDH_dat <- getAssayData("LDH",sourcefile)
@@ -135,12 +133,14 @@ getFileCytoData <- function(sourcefile) {
   allfiledat[, rowi := sapply(Row, function(x) utf8ToInt(x) - utf8ToInt("A") + 1)]
   allfiledat[, coli := as.numeric(coli)]
   
-  allfiledat <- allfiledat[,c("treatment","apid","experiment.date","plate.id","rowi","coli","conc","rval","srcf","acsn")]
+  allfiledat <- allfiledat[,c("treatment","apid","experiment.date","plate.id","rowi","coli","conc","rval","srcf","acnm")]
 
   return(allfiledat)
 }
 
 getAllCytoData <- function(main.output.dir, dataset_title, files_log = "") {
+  
+  cat("\n\nLoad Cytotoxicity Data:\n")
   
   # only need to specifiy files_log if you want to use a specific files_log
   # instead of just the most rect calculations files log
@@ -150,7 +150,7 @@ getAllCytoData <- function(main.output.dir, dataset_title, files_log = "") {
   
   cytodat <- list()
   for (i in 1:length(calc_files)) {
-    cat("\n",basename(calc_files[i]),sep="")
+    cat("\n",basename(calc_files[i]),"\n",sep="")
     add.dat <- getFileCytoData(calc_files[i])
     cytodat <- rbind(cytodat, add.dat)
     rm(add.dat)
@@ -164,6 +164,16 @@ getAllCytoData <- function(main.output.dir, dataset_title, files_log = "") {
   # rm(cytodat)
   # cat("\n\nRData is saved:",filename)
   
-  cat("\ncytodat is ready")
+  # check for/summarize NA values
+  na_indicies <- which(is.na(cytodat), arr.ind = TRUE)
+  if (length(na_indicies) == 0) {
+    cat("There are no NA values in cytodat.\n")
+  }
+  else {
+    cat("There are some NA values in cytodat:\n")
+    print(cytodat[na_indicies[, "row"], .SD, .SDcols = setdiff(names(cytodat),"files_log")])
+  }
+  
+  cat("\ncytodat is ready\n")
   return(cytodat)
 }

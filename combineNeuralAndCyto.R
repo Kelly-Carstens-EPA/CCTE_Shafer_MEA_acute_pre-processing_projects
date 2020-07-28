@@ -3,6 +3,7 @@
 combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
 
   # read the data from the most recent file in main.ouput.dir
+  cat("\nLevel 3 - Combine Cyto and Neural Stats Data; Initialize treatment, conc, and wllq\n")
   cat("\nLoading...\n")
   dat2 <- get_latest_dat(lvl = "dat2",dataset_title)
   # dat2_files <- list.files(path = paste0(main.output.dir,"/output"), pattern = paste0("_dat2_"), recursive = F, full.names = T)
@@ -21,7 +22,7 @@ combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
   
   # get treatment and conc values for dat2 from cytodat
   dat3 <- list()
-  endpoints <- unique(dat2$acsn)
+  endpoints <- unique(dat2$acnm)
   # sometimes the conc collected for the LDH and CTB data has diff number of sig figs, so I can't just use unique(conc)
   # instead, I check that the 2 conc values are the same to 5 decimal places, then use the average of the 2 conc values
   collapseConc <- function(x) {
@@ -50,17 +51,19 @@ combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
     stop("There are differences in CTB and LDH well id data; not sure how to merge with dat2. See well_id_dat")
   }
   for (endpoint in endpoints) {
-    add.dat <- merge(dat2[acsn == endpoint], well_id_dat, by = c("plate.id","experiment.date","rowi","coli"))
+    add.dat <- merge(dat2[acnm == endpoint], well_id_dat, by = c("plate.id","experiment.date","rowi","coli"))
     dat3 <- rbind(dat3, add.dat)
     rm(add.dat)
   }
   
   dat3[, "dat2" := basename(RData_files_used)]
   
-  # get the wllq for cytodat, using mean firing rate acsn data rows
+  # get the wllq for cytodat, from MEA data (if all endpoints for a well have wllq==0, then set wllq to 0 for cytodat. Otherwise, let cytodat wllq be 1)
   wllq_summary <- dat2[, .(wllq = ifelse(unique(wllq) == 0, 0, 1), wllq_notes = paste0(unique(wllq_notes), collapse="")), by = c("plate.id","experiment.date","rowi","coli")]
-  # if wllq set to 0 only because the recording was too long or too short, let wllq be 1 for cytodat
-  wllq_summary[grepl("Recording length",wllq_notes) & lengths(regmatches(wllq_notes, gregexpr(";",wllq_notes))) == 1, `:=`(wllq = 1, wllq_notes = "")]
+  # for plates where recording length was too long or short, let wllq be 1 for all cytotoxicity data wells
+  wllq_summary[grepl("Recording length",wllq_notes), `:=`(wllq = 1, wllq_notes = "")]
+  # Previous -  # if wllq set to 0 only because the recording was too long or too short, let wllq be 1 for cytodat
+  # wllq_summary[grepl("Recording length",wllq_notes) & lengths(regmatches(wllq_notes, gregexpr(";",wllq_notes))) == 1, `:=`(wllq = 1, wllq_notes = "")]
   # if wllq set to 0 only because the mfr is above the upper threshold, let wllq be 1 for cytodat
   # (we remove these wells because an excessively high mfr value will affect the percent change values, not because somethign is likely wrong with the well, I believe)
   wllq_summary[grepl("Baseline MFR > ",wllq_notes) & lengths(regmatches(wllq_notes, gregexpr(";",wllq_notes))) == 1, `:=`(wllq = 1, wllq_notes = "")]
@@ -76,5 +79,5 @@ combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
   
   file_name <- paste0(main.output.dir,"/output/",dataset_title,"_dat3_",as.character.Date(Sys.Date()),".RData")
   save(dat3, file = file_name)
-  cat(file_name, " is ready.\n",sep="")
+  cat(basename(file_name), " is ready.\n",sep="")
 }

@@ -31,57 +31,6 @@ getTagPhraseIndex <- function(char_vector, grep_tagPhrases, errorifmissing = T, 
 # getTagPhraseIndex(cvector, "hi", errorifmissing = T)
 # # throws an error, since checkMultiple default is T
 
-get_acsn_map <- function() {
-  # conversation with Tim 06/16/2020 - 
-  # Half Width at Half Height of Cross-Correlation and 
-  # Width at Half Height of Cross-Correlation are the same thing. 
-  # Axion just misnamed it at first time.
-  # Half Width at Half Height of Cross-Correlation is the correct name
-
-  file_acsn_using = c(
-    'Number of Spikes',
-    'Mean Firing Rate (Hz)',
-    'Number of Bursts',
-    'Burst Duration - Avg (s)',
-    'Number of Spikes per Burst - Avg',
-    'Mean ISI within Burst - Avg',
-    'Burst Percentage - Avg',
-    'Burst Percentage - Std',
-    'Number of Spikes per Network Burst - Avg',
-    'Number of Spikes per Network Burst - Std',
-    'Number of Elecs Participating in Burst - Avg',
-    'Network Burst Percentage',
-    'Area Under Cross-Correlation',
-    'Synchrony Index',
-    'Half Width at Half Height of Cross-Correlation',
-    'Width at Half Height of Cross-Correlation'
-  )
-  
-  tcpl_acsn <- c(
-    'NHEERL_MEA_acute_spike_number',
-    'NHEERL_MEA_acute_firing_rate_mean',
-    'NHEERL_MEA_acute_burst_number',
-    'NHEERL_MEA_acute_burst_duration_mean',
-    'NHEERL_MEA_acute_per_burst_spike_number_mean',
-    'NHEERL_MEA_acute_interburst_interval_mean',
-    'NHEERL_MEA_acute_burst_percentage_mean',
-    'NHEERL_MEA_acute_burst_percentage_std',
-    'NHEERL_MEA_acute_per_network_burst_spike_number_mean',
-    'NHEERL_MEA_acute_per_network_burst_spike_number_std',
-    'NHEERL_MEA_acute_bursting_electrodes_number_mean',
-    'NHEERL_MEA_acute_network_burst_percentage',
-    'NHEERL_MEA_acute_cross_correlation_area',
-    'NHEERL_MEA_acute_synchrony_index',
-    'NHEERL_MEA_acute_cross_correlation_HWHM',
-    'NHEERL_MEA_acute_cross_correlation_HWHM'
-  )
-  
-  acsn_map <- data.table(file_acsn_using, tcpl_acsn)
-  assign("acsn_map",acsn_map,envir = .GlobalEnv)
-}
-# acsn_map <- get_acsn_map()
-# write.csv(acsn_map, file = "neural_stats_endpoint_to_tcpl_acsn_map.csv", row.names = T)
-
 
 fileToLongdat <- function(filei, run.type.tag.location,
                           plate.id.tag.location = numeric(0), include.all.settings = F) {
@@ -102,13 +51,13 @@ fileToLongdat <- function(filei, run.type.tag.location,
   dat <- as.data.table(read.table(filei, sep = ",", header = T, skip = (well.averages.rowi - 1), nrows = (next.blank.row.dist-2),
                                   stringsAsFactors = F))
   dat <- dat[, 1:49] # in case the file was saved differently and it collected all 769 columns
-  setnames(dat, old = grep("[Ww]ell.[Aa]verages", names(dat),value=T), new = "file_acsn")
-  dat <- dat[file_acsn != "Treatment/ID"] # remove Treatment/ID row
+  setnames(dat, old = grep("[Ww]ell.[Aa]verages", names(dat),value=T), new = "acsn")
+  dat <- dat[acsn != "Treatment/ID"] # remove Treatment/ID row
   dat[, names(dat)[-1] := lapply(.SD, as.numeric), .SDcols = names(dat)[-1]] # make all well columns double, not int
   
   # check if any entire rows are NA
   for (i in 1:nrow(dat)) {
-    all_row_NA <- all(is.na(dat[i, c(which(names(dat)!="file_acsn")),with=F]))
+    all_row_NA <- all(is.na(dat[i, c(which(names(dat)!="acsn")),with=F]))
     if(all_row_NA) {
       assign(x = "dat", value = dat, envir = .GlobalEnv) # pass dat to global env to can check
       stop("NA row in Well Averages data. Data table 'dat' passed to Global Env for inspection")
@@ -116,7 +65,7 @@ fileToLongdat <- function(filei, run.type.tag.location,
   }
   
   # melt the data in long file format
-  longdat <- melt(dat, id.vars = "file_acsn", variable.name = "well", value.name = "activity_value", variable.factor = F)
+  longdat <- melt(dat, id.vars = "acsn", variable.name = "well", value.name = "activity_value", variable.factor = F)
   rm(dat)
   
   # COLLECT ID DATA
@@ -224,7 +173,7 @@ fileToLongdat <- function(filei, run.type.tag.location,
     longdat[, wllq_notes := ""]
     
     # if nAE is less than 10 or is NA, set wllq=0
-    low_ae_wells <- longdat[file_acsn == "Number of Active Electrodes" & (activity_value < 10 | is.na(activity_value)), well]
+    low_ae_wells <- longdat[acsn == "Number of Active Electrodes" & (activity_value < 10 | is.na(activity_value)), well]
     longdat[well %in% low_ae_wells, `:=` (wllq = 0, wllq_notes = "Baseline # of AE < 10; ")]
     
     # if the MFR is very low or near the theoretical upper limit, remove that well
@@ -233,9 +182,9 @@ fileToLongdat <- function(filei, run.type.tag.location,
     # for more details
     mfr_upper_threshold <- 3.4036511 # this is the 95th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
     mfr_lower_threshold <- 0.6377603 # this is the 5th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
-    high_mfr_wells <- longdat[file_acsn == "Mean Firing Rate (Hz)" & activity_value > mfr_upper_threshold, well]
+    high_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & activity_value > mfr_upper_threshold, well]
     longdat[well %in% high_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR > ",mfr_upper_threshold," Hz; "))]
-    low_mfr_wells <- longdat[file_acsn == "Mean Firing Rate (Hz)" & (activity_value < mfr_lower_threshold | is.na(activity_value)), well]
+    low_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & (activity_value < mfr_lower_threshold | is.na(activity_value)), well]
     longdat[well %in% low_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR < ",mfr_lower_threshold," Hz; "))]
   }
   else {
@@ -248,15 +197,19 @@ fileToLongdat <- function(filei, run.type.tag.location,
   longdat[analysis.duration > 3800, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length > 3800 s; "))]
   
   
-  # add in the tcpl_acsn. Unwanted parameters will be dropped
-  longdat <- merge(longdat, acsn_map, by.x = c("file_acsn"), by.y = c("file_acsn_using"))
-  setnames(longdat, old = "tcpl_acsn", new = "acsn")
-  longdat[, file_acsn := NULL] # remove unneeded column. Can always add back with get_acsn_map
+  # map to the acnm's. Throw an error if any acsn's aren't in the acsn map table
+  longdat <- merge(longdat, acsn_map, by = c("acsn"), all.x = TRUE)
+  if (any(is.na(unique(longdat$acnm)))) {
+    stop(paste0("The following assay components where not found in acsn_to_acnm_map.xlsx:\n",
+                paste0(longdat[is.na(acnm),sort(unique(acsn))],collapse=" ,")))
+  }
   
-  cat(paste0("\nProcessed ",basename(filei)))
-  # cat(paste0("\nRun type: ",run_type))
-  # if (run_type == "baseline") {
-  #   cat("\nWells with wllq set to 0:",weak_wells)
-  # }
+  if (noisy_functions) {
+    cat("Processed",basename(filei), "\n")
+  }
+  else {
+    cat(".")
+  }
+
   return(longdat)
 }

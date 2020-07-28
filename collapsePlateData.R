@@ -3,6 +3,7 @@
 collapsePlateData <- function(main.output.dir, dataset_title) {
   
   # read the data from the most recent dat1 RData file
+  cat("\n\nLevel 2 - Collapse Data by Plate ID:\n")
   cat("\nLoading...\n")
   dat1 <- get_latest_dat(lvl = "dat1",dataset_title)
   
@@ -18,7 +19,7 @@ collapsePlateData <- function(main.output.dir, dataset_title) {
   dat2 <- list()
   for (plate in plates) {
     
-    cat("\n\n",plate, sep = "")
+    cat("\n",plate, sep = "")
     
     bdat <- dat1[date_plate == plate & run_type == "baseline"]
     tdat <- dat1[date_plate == plate & run_type == "treated"]
@@ -27,8 +28,10 @@ collapsePlateData <- function(main.output.dir, dataset_title) {
       stop(paste0("\nBaseline and/or treated files not found for ",plate))
     }
     
-    cat("\n\tBaseline stats file name: ",unique(basename(bdat$srcf)),sep="")
-    cat("\n\tTreated stats file name: ",unique(basename(tdat$srcf)),sep="")
+    if (noisy_functions) {
+      cat("\n\tBaseline stats file name: ",unique(basename(bdat$srcf)),sep="")
+      cat("\n\tTreated stats file name: ",unique(basename(tdat$srcf)),"\n",sep="")
+    }
     
     # check same number of data rows
     if (nrow(bdat) != nrow(tdat)) stop("\nUnequal number of rows for baseline and treated data.")
@@ -43,9 +46,9 @@ collapsePlateData <- function(main.output.dir, dataset_title) {
     }
     
     # get the  columns we need (drop the settings data, as well as run_type)
-    usecols <- c("acsn","apid","experiment.date","plate.id","well","coli","rowi", "activity_value", "wllq","srcf","wllq_notes","files_log")
+    usecols <- c("acnm","apid","experiment.date","plate.id","well","coli","rowi", "activity_value", "wllq","srcf","wllq_notes","files_log")
     
-    platedat <- merge(bdat[,..usecols], tdat[, ..usecols], by = c("acsn","apid","experiment.date","plate.id","well","coli","rowi","files_log"), 
+    platedat <- merge(bdat[,..usecols], tdat[, ..usecols], by = c("acnm","apid","experiment.date","plate.id","well","coli","rowi","files_log"), 
                       suffixes = c(".b",".t"))
     
     # calculate the percent change in activity
@@ -61,7 +64,7 @@ collapsePlateData <- function(main.output.dir, dataset_title) {
     platedat[, srcf := paste(srcf.b, srcf.t, sep = ";")]
     
     # just get the columns we need
-    add.dat <- platedat[, .(acsn, apid, experiment.date, plate.id, coli, rowi, wllq, wllq_notes, rval, srcf, files_log)]
+    add.dat <- platedat[, .(acnm, apid, experiment.date, plate.id, coli, rowi, wllq, wllq_notes, rval, srcf, files_log)]
     dat2 <- rbind(dat2, add.dat)
     rm(add.dat)
   }
@@ -73,5 +76,5 @@ collapsePlateData <- function(main.output.dir, dataset_title) {
   filename <- file.path(main.output.dir, "output",paste0(dataset_title,"_dat2_",as.character.Date(Sys.Date()),".RData"))
   save(dat2, file = filename)
 
-  cat("\n",filename, " is ready.\n",sep="")
+  cat("\n",basename(filename), " is ready.\n",sep="")
 }
