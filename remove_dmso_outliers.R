@@ -57,6 +57,7 @@ remove_dmso_outliers <- function(dat4, view_acnm = "CCTE_Shafer_MEA_acute_firing
   print(dat4[remove_dmso_low_mfr_rval == TRUE, .N, by = "acnm"]) # confirming this looks right
   dat4[remove_dmso_low_mfr_rval == TRUE, `:=`(wllq = 0, wllq_notes = paste0(wllq_notes, "DMSO % change MFR > 2*SD from the mean; "))]
   dat4[, remove_dmso_low_mfr_rval := NULL]
+  dat4[, apid := as.character(apid)]
   
   print(paste0(paste0("lvl0_snapshots/figs/dmso_outlier_visualization_",view_acnm,"_",as.character.Date(Sys.Date()),".pdf"), " is ready."))
   dat4
