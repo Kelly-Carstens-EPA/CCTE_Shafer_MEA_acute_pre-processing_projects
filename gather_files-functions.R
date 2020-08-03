@@ -73,7 +73,7 @@ read_files <- function(check.dir = "", files_log = "", files_type = "neural_stat
   # function to read the files from the log file
   files_table <- read.table(files_log, sep = "\n", stringsAsFactors = F, col.names = c("col1"), blank.lines.skip = T)
   setDT(files_table)
-  allfiles <- files_table[grepl("(.csv$)|(.xlsx$)|(.xls$)",col1),c(col1)]
+  allfiles <- files_table[grepl("(\\.csv$)|(\\.xlsx$)|(\\.xls$)",col1),c(col1)]
   allfiles <- unique(allfiles) # in case any overmatching in grepl statement in writeLogFile resulted in duplicated entries
   cat("\nGot ",length(allfiles)," files.",sep="")
   return(allfiles)
