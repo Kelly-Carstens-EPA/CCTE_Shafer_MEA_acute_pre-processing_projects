@@ -3,12 +3,12 @@ rm(list = ls())
 # USER INPUT
 ###################################################################################
 start.dir <- "L:/Lab/NHEERL_MEA"
-dataset_title <- "" # e.g. "name2020"
+dataset_title <- "TSCA2019" # e.g. "name2020"
 select.neural.stats.files <- T # select new neural stats files, or use the files in the most recent neural_stats_files_log?
-select.calculations.files <- T # select new calculations files, or use the files in the most recent calculations_files_log?
+select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
 run.type.tag.location <- 5 # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
-spidmap_file <- "L:/Lab/NHEERL_MEA/Project - DNT 2019/All Assays_list_toxcast_OECD 20190524.xlsx"
-use_sheet <- "MEA Acute Conc Res" # sheet name in spidmap_file
+spidmap_file <- ""
+use_sheet <- "" # sheet name in spidmap_file
 # optional adjutsment; usually can use defaults:
 root_output_dir <- "L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl" # where the dataset_title folder will be created
 override_wllq_checks <- FALSE # set to TRUE only if you have already verified your wllq updates
@@ -21,6 +21,7 @@ standard_analysis_duration_requirement <- TRUE # default should be true
 
 library(data.table)
 library(openxlsx)
+library(stringi)
 
 # set up folders and working directory
 if (!dir.exists(file.path(root_output_dir,dataset_title))) dir.create(file.path(root_output_dir,dataset_title))
@@ -49,9 +50,11 @@ if (select.calculations.files) {
 
 # Check that at run.type.tag.location, there is one file with  _00 and 1 file with _01 for each plate
 # this is a fallable check, thought, bc the plate or date names may be incorrect in the file names
-checkFileNames(run.type.tag.location, main.output.dir, dataset_title)
+run.type.tag.location <- checkFileNames(run.type.tag.location, main.output.dir, dataset_title, guess = T)
 # OUTPUT --------------------------------------------------------- 
-# 
+# Reading from TSCA2019_neural_stats_files_log_2021-05-10.txt...
+# Got 84 files.
+# Store the run.type.tag.location.vector
 # ---------------------------------------------------------------- 
 
 # Check the neural stats files for common issues
@@ -60,20 +63,108 @@ tryCatch(writeCheckSummary(main.output.dir, dataset_title),
            closeAllConnections()
            e } )  
 # OUTPUT --------------------------------------------------------- 
-# 
+# TSCA2019_check_summary_2021-05-10.txt is ready.
 # ---------------------------------------------------------------- 
+# parameters and timing summary look okay
 
 # extract all of the data from the files and transform into long data format (dat1)
-extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location)
+extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
 # OUTPUT --------------------------------------------------------- 
+# Level 1 - Extract All Data:
 # 
+# Reading from TSCA2019_neural_stats_files_log_2021-05-10.txt...
+# Got 84 files.
+# Reading data from files...
+# Processed AC_20201104_MW71-7104_13_00(000)(000).csv 
+# Processed AC_20201104_MW71-7104_13_00(001)(000).csv 
+# Processed AC_20201104_MW71-7105_13_00(001)(000).csv 
+# Processed AC_20201104_MW71-7105_13_00(002)(000).csv
+# ...
+# TSCA2019_dat1_2021-05-10.RData is ready.
+# Summary of dates/plates with wllq=0 at Level 1:
+# (42 plates afffected)
 # ---------------------------------------------------------------- 
 
 # view dat1
 dat1 <- get_latest_dat(lvl = "dat1", dataset_title)
 print(dat1[, .N/length(unique(dat1$acnm)), by = "wllq_notes"])
 # view all experiment.date's and plate.id's. Are there any NA/missing labels?
+
+# making sure the baseline/treatment labelling looks correct
+dat1[, .N, by = .(apid, srcf, run_type)] # oh dear, all are labelled baseline rn!
+
+# add teh run type tag location to each srcf
+run.type.tag.tb <- data.table(srcf = names(run.type.tag.location), run.type.tag.location = run.type.tag.location)
+dat1 <- merge(dat1, run.type.tag.tb, by = 'srcf')
+dat1[run.type.tag.location == 5, run.type.tag := stri_replace_all_regex(srcf, pattern = paste0(c(rep('[^_]*_',times=4)),collapse=''), replacement = '')]
+dat1[run.type.tag.location == 6, run.type.tag := stri_replace_all_regex(srcf, pattern = paste0(c(rep('[^_]*_',times=5)),collapse=''), replacement = '')]
+dat1[, run.type.tag := stri_replace_all_regex(run.type.tag, pattern = '\\.csv', '')]
+dat1[, baseline.run.type.tag := sort(unique(run.type.tag))[1], by = .(apid, plate.id, experiment.date)]
+dat1[, run_type := ifelse(run.type.tag == baseline.run.type.tag, 'baseline', 'treated')]
+dat1[, .N, by = .(apid, srcf, run_type, run.type.tag)] # looks good!
+
+# At Kathleen's request, getting the recording name for each file
+extract_recording_name <-  function(filei) {
+  
+  file_scan <- scan(file = filei, what = character(), sep = "\n", blank.lines.skip = F, quiet=T) # empty lines will be just ""
+  file_col1 <- sapply(file_scan, function(x) strsplit(x, split = ",")[[1]][1], USE.NAMES = F) # empty lines will be NA
+  file_col2 <- sapply(file_scan, function(x) strsplit(x, split = ",")[[1]][2], USE.NAMES = F) # if nothing in second col, will be NA
+  
+  # get relevant data from file header
+  headdat <- data.table(file_col1, file_col2)
+  
+  rec.name <- headdat[grepl('Recording Name',file_col1), file_col1]
+  return(data.table(recording_name = rec.name, srcf = basename(filei)))
+  
+}
+
+files <- read_files(main.output.dir)
+# Reading from TSCA2019_neural_stats_files_log_2021-05-10.txt...
+# Got 84 files.
+setdiff(basename(files), unique(dat1$srcf)) # empty!
+add.dat <- data.table()
+for (filei in files) {
+  add.dat <- rbind(add.dat, extract_recording_name(filei))
+}
+str(add.dat)
+dat1 <- merge(dat1, add.dat, by = 'srcf', all = T)
+dat1[is.na(recording_name)] # empty
+dat1[is.na(run_type)] # empty
+rm(add.dat)
+
+# export the requested data to excel
+# I'm going to try to note the group, from the srcf name
+filename.tb <- data.table(srcf = basename(files), fullname = files)
+dat1 <- merge(dat1, filename.tb, by = 'srcf', all = T)
+dat1[, .N, by = .(fullname)]
+dat1[, culture_folder := basename(dirname(dirname(fullname)))]
+dat1[, .N, by = .(culture_folder)]
+
+# I'm pretty sure they won't want the txt prefix in the recording name
+dat1[, recording_name := sub('Recording Name: ','',recording_name)]
+dat1[, culture_date := sub(' .*$','',culture_folder)]
+dat1[culture_date != recording_name, .N, by = .(culture_date, recording_name)]
+# not all equa
+dat1[experiment.date != recording_name, .N, by = .(culture_date, recording_name)] # many cases
+# I guess I'll include all 3 for now
+dat1[, group := sub('^[^G]* ','',culture_folder)]
+dat1[, .N, by = .(group)]
+
+prep.dat <- dat1[run_type == 'baseline' & grepl('^2021',experiment.date) & acsn %in% c('Weighted Mean Firing Rate (Hz)','Number of Active Electrodes'), 
+                 .(culture_date, group, experiment.date, recording_name, plate.id, well, acsn, activity_value, wllq, wllq_notes)]
+setnames(prep.dat, old = c('experiment.date','plate.id'), new = c('experiment_date','plate'))
+prep.dat2 <- dcast(prep.dat, culture_date + group + experiment_date + recording_name + plate + well + wllq + wllq_notes ~ acsn, value.var = 'activity_value')
+prep.dat2
+
+prep.dat2[, .N, by = .(culture_date, group, experiment_date)]
+
+wb <- createWorkbook()
+openxlsx::addWorksheet(wb, sheetName = 'Sheet1')
+writeData(wb, sheet = 1, x = prep.dat2)
+saveWorkbook(wb, file = 'TSCA2019_MEA_Acute_baseline_recordings_from_2021.xlsx', overwrite = T)
 rm(dat1)
+
+
 
 # collapse the plate data by calculating the percent change in activity (dat2)
 collapsePlateData(main.output.dir, dataset_title, main.dir = root_output_dir)
