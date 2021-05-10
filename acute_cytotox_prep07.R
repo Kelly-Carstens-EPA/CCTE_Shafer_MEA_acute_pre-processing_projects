@@ -12,12 +12,15 @@ findTabData <- function(sourcefile, assay = c("AB", "LDH")) {
                      AB = ABnames,
                      LDH = LDHnames)
   
-  sourcefile_tabs <- excel_sheets(sourcefile)
+  sourcefile_tabs <- getSheetNames(sourcefile)
   tabName <- intersect(tabNames, sourcefile_tabs)
   if (length(tabName) != 1) {
     tabName <- readline(prompt = paste0("Enter name of sheet for ",tabNames[1]," in ", basename(sourcefile)," : "))
   }
-  my_data <- as.data.table(read_excel(sourcefile, sheet = tabName, range = "A1:AX55", col_names = paste0("col",1:50)))
+  # my_data <- as.data.table(read_excel(sourcefile, sheet = tabName, range = "A1:AX55", col_names = paste0("col",1:50)))
+  my_data <- as.data.table(read.xlsx(sourcefile, sheet = tabName, rows = 1:55, skipEmptyRows = FALSE, cols = 1:50, skipEmptyCols = FALSE, colNames = FALSE))
+  colnames(my_data) <- paste0("col",1:ncol(my_data)) # if last col is empty, will drop even with skipEmptyCols == FALSE
+  
   return(my_data)
 }
 
@@ -109,10 +112,15 @@ getAssayData <- function(cyto_type, sourcefile) {
 getFileCytoData <- function(sourcefile) {
   
   # get the experiment date from Plate 1
-  plate1_dat <- as.data.frame(read_excel(sourcefile, sheet = "Plate 1", range = "A1:J10", col_names = paste0("col",1:10)))
+  # plate1_dat <- as.data.frame(read_excel(sourcefile, sheet = "Plate 1", range = "A1:J10", col_names = paste0("col",1:10)))
+  plate1_dat <- as.data.table(read.xlsx(sourcefile, sheet = "Plate 1", rows = 1:10, cols = 1:10, colNames = FALSE))
+  colnames(plate1_dat) <- paste0("col",1:ncol(plate1_dat))
   exp_date_index <- which(plate1_dat == "Experiment ID", arr.ind = T) # returns a 2-element vector of the row and col index
   experiment_date <- plate1_dat[exp_date_index[1], (exp_date_index[2] + 1)]
-  if (is.null(experiment_date) || experiment_date == "") stop(paste0("Can't find experiment date in ",sourcefile))
+  if (!('experiment_date' %in% ls())) {
+    cat(paste0("Can't find experiment date in ",sourcefile,".\nSetting experiment_date to NA"))
+    experiment_date <- NA_character_
+  }
   
   AB_dat <- getAssayData("AB",sourcefile)
   LDH_dat <- getAssayData("LDH",sourcefile)
