@@ -1,13 +1,16 @@
 # get most recent dat4 (or other) from all folders, or a specific folder
 
-get_latest_dat <- function(lvl = "dat4", dataset_titles = NULL) {
+get_latest_dat <- function(lvl = "dat4", dataset_titles = NULL, 
+                           main.dir = "L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl") {
   
-  main.dir <- "L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl"
   if (!(lvl %in% c(paste0("dat",1:4),"mc0"))) stop(paste0("'lvl' must be in ",paste0(c(paste0("dat",1:4),"mc0"),collapse=", ")))
   if (is.null(dataset_titles)) {
-    # kinda janky - all folders with no underscores and a "20" will be used
-    dirs <- list.dirs(path = main.dir, full.names = F, recursive = F)
-    dirs <- dirs[grepl(pattern = "20",dirs) & !grepl("_",dirs)]
+    # # kinda janky - all folders with no underscores and a "20" will be used
+    # dirs <- list.dirs(path = main.dir, full.names = F, recursive = F)
+    # dirs <- dirs[grepl(pattern = "20",dirs) & !grepl("_",dirs)]
+    # Actually, since some datasets are not designed to be added to TCPL,
+    # I'm going to just manually list the ones that are tcpl-ready
+    dirs <- c('APCRA2019','DNT2019','GF2019','ToxCast2016')
     cat(paste0("Getting data from folders ",paste0(dirs,collapse=", ")),"\n")
   }
   else {

@@ -1,11 +1,15 @@
 # script to gather the wanted mea acute files
 
-selectInputFiles <- function(start.dir, output.dir, dataset_title = "", files_type = "neural_stats"){
+selectInputFiles <- function(start.dir, output.dir, dataset_title = "", files_type = "neural_stats", append = FALSE){
   
   # get starting folder, to initialize starting screen
   culture.dirs <- list.dirs(path = start.dir, recursive = F)
   
-  file_names <- c()
+  if (append) {
+    file_names <- read_files(check.dir = output.dir, files_type = files_type)
+  } else {
+    file_names <- c()
+  }
   previousfolder <- culture.dirs[1]
   
   repeat {

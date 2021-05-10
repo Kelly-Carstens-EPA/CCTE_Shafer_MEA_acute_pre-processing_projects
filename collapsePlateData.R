@@ -1,11 +1,11 @@
 # function to calculate the percent change values
 # result is dat2
-collapsePlateData <- function(main.output.dir, dataset_title) {
+collapsePlateData <- function(main.output.dir, dataset_title, main.dir) {
   
   # read the data from the most recent dat1 RData file
   cat("\n\nLevel 2 - Collapse Data by Plate ID:\n")
   cat("\nLoading...\n")
-  dat1 <- get_latest_dat(lvl = "dat1",dataset_title)
+  dat1 <- get_latest_dat(lvl = "dat1",dataset_title, main.dir = main.dir)
   
   # data_files <- list.files(path = path.expand(paste0(main.output.dir,"/output")), pattern = paste0(dataset_title,"_dat1_"), recursive = F, full.names = T)
   # data_file <- data_files[order(basename(data_files), decreasing = T)[1]] # get the most recent data file

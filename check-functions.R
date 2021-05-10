@@ -1,7 +1,7 @@
 # Functions to flag common potential issues with the input data
 
 # check the file names, make sure that they follow the naming convention of _00 for baseline and _01 for treated
-checkFileNames <- function(run.type.tag.location, check.dir, dataset_title, files_log = "") {
+checkFileNames <- function(run.type.tag.location, check.dir, dataset_title, files_log = "", guess = FALSE) {
   
   files <- read_files(check.dir, files_log)
   checknames <- basename(files)
@@ -19,13 +19,44 @@ checkFileNames <- function(run.type.tag.location, check.dir, dataset_title, file
   names.summary <- compare.names[, .(run.type.tags = paste0(sort(unique(run.type.tag)),collapse=","),
                                      filenames = paste0(sort(unique(filename)),collapse=",")), by = "name.prefix"]
   misnamed.files.table <- names.summary[run.type.tags != "00,01", .(filenames, run.type.tags)]
+  
   if (nrow(misnamed.files.table) == 0){
     cat("\nAll files are named correctly.\n")
   }
-  else {
+  else if (!guess) {
     cat("\nThe following files appear to be named incorrectly:\n")
     print(misnamed.files.table)
   }
+  else if (guess) {
+    # sort the files, then extract the first tag for each pair of files that is different
+    sort.files <- sort(checknames)
+    run.type.tag.location.vector <- c()
+    for (i in seq(from=1, to = length(sort.files)-1, by = 2)) {
+      file1 <- strsplit(sort.files[i], split = '_')[[1]]
+      file2 <- strsplit(sort.files[i+1], split = '_')[[1]]
+      run.type.tag.location <- rep(which(file1 != file2)[1], 2)
+      run.type.tag.location.vector <- c(run.type.tag.location.vector, run.type.tag.location)      
+    }
+    # output vector in same order as read from files.log
+    names(run.type.tag.location.vector) <- sort.files
+    run.type.tag.location.vector <- run.type.tag.location.vector[match(checknames, names(run.type.tag.location.vector))]
+    cat('\nStore the run.type.tag.location.vector\n')
+    return(run.type.tag.location.vector)
+  }
+  
+  # if (nrow(misnamed.files.table) > 0 & guess) {
+  #   # get the full string at run.type.tag.location, not just the first 2 digits
+  #   run.type.tags <- c()
+  #   for (filei in files) {
+  #     run.type.tag <- strsplit(basename(filei), split = "_")[[1]][run.type.tag.location]
+  #     run.type.tags <- c(run.type.tags, sub("\\.csv","",run.type.tag))
+  #   }
+  #   compare.names <- data.table("filename" = checknames, "run.type.tag" = run.type.tags, "name.prefix" = name.prefixes)
+  #   names.summary <- compare.names[, .(run.type.tags = paste0(sort(unique(run.type.tag)),collapse=","),
+  #                                      filenames = paste0(sort(unique(filename)),collapse=",")), by = "name.prefix"]
+  #   
+  # }
+  
 }
 
 

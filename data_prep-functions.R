@@ -33,7 +33,8 @@ getTagPhraseIndex <- function(char_vector, grep_tagPhrases, errorifmissing = T, 
 
 
 fileToLongdat <- function(filei, run.type.tag.location,
-                          plate.id.tag.location = numeric(0), include.all.settings = F) {
+                          plate.id.tag.location = numeric(0), include.all.settings = F, guess_run_type_later = F,
+                          standard_analysis_duration_requirement = get('standard_analysis_duration_requirement', envir = .GlobalEnv)) {
   
   file_scan <- scan(file = filei, what = character(), sep = "\n", blank.lines.skip = F, quiet=T) # empty lines will be just ""
   file_col1 <- sapply(file_scan, function(x) strsplit(x, split = ",")[[1]][1], USE.NAMES = F) # empty lines will be NA
@@ -76,10 +77,15 @@ fileToLongdat <- function(filei, run.type.tag.location,
   # e.g. TC_20190508_MW68-0808_13_00(000).csv is baseline, and TC_20190508_MW68-0808_13_01(000).csv is treated.
   # ignore the 0's and 1's that come after the first 2 digits in that tag
   run.type.tag <- strsplit(basename(filei), split = "_")[[1]][run.type.tag.location]
-  run_type <- switch(substring(run.type.tag,1,2), 
-                     "00" = "baseline",
-                     "01" = "treated",
-                     stop(paste0("\nrun type cannot be determined for ",basename(filei))))
+  if (guess_run_type_later) {
+    run_type <- sub("\\.csv","",run.type.tag)
+  } else{
+    run_type <- switch(substring(run.type.tag,1,2), 
+                       "00" = "baseline",
+                       "01" = "treated",
+                       sub("\\.csv","",run.type.tag))
+  }
+  if(!run_type %in% c('baseline','treated')) warning(paste0("\nrun type cannot be determined for ",basename(filei),'.\nNo wllq checks will be done for this recording.'))
   
   # get relevant data from file header
   headdat <- data.table(file_col1, file_col2)
@@ -189,18 +195,19 @@ fileToLongdat <- function(filei, run.type.tag.location,
   }
   else {
     # don't assign wllq for treated wells (yet)
-    longdat[, `:=` (wllq = NA, wllq_notes = "")]
+    longdat[, `:=` (wllq = NA_integer_, wllq_notes = "")]
   }
   # for baseline or treated, if recording length is very short or very  long, remove it
-  if (abs(analysis.duration - 2400) > 1400) cat("\n",basename(filei),"will be removed. Recording length is",analysis.duration)
-  longdat[analysis.duration < 1000, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length < 1000 s; "))]
-  longdat[analysis.duration > 3800, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length > 3800 s; "))]
-  
+  if (standard_analysis_duration_requirement) {
+    if (abs(analysis.duration - 2400) > 1400) cat(basename(filei),"will be removed. Recording length is",analysis.duration,"\n")
+    longdat[analysis.duration < 1000, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length < 1000 s; "))]
+    longdat[analysis.duration > 3800, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length > 3800 s; "))]    
+  }
   
   # map to the acnm's. Throw an error if any acsn's aren't in the acsn map table
   longdat <- merge(longdat, acsn_map, by = c("acsn"), all.x = TRUE)
   if (any(is.na(unique(longdat$acnm)))) {
-    stop(paste0("The following assay components where not found in acsn_to_acnm_map.xlsx:\n",
+    stop(paste0("The following assay components where not found in acsn_to_acnm_map.csv:\n",
                 paste0(longdat[is.na(acnm),sort(unique(acsn))],collapse=" ,")))
   }
   

@@ -1,6 +1,6 @@
 # function to run all files through fileToLongDat and print summary of wllq changes
 extractAllData <- function(output.dir, dataset_title, run.type.tag.location, append = F, files_log = "",
-                           plate.id.tag.location = numeric(0)) {
+                           plate.id.tag.location = numeric(0), guess_run_type_later = F) {
   
   cat("\n\nLevel 1 - Extract All Data:\n")
   
@@ -25,10 +25,17 @@ extractAllData <- function(output.dir, dataset_title, run.type.tag.location, app
   new_files_basenames <- sort(setdiff(basename(all_files), completed_files))
   new_files <- all_files[basename(all_files) %in% new_files_basenames]
   
+  if(length(run.type.tag.location) == 1) {
+    run.type.tag.location <- rep(run.type.tag.location, length(new_files))
+  } else {
+    # subset and sort according to new files to add
+    run.type.tag.location <- run.type.tag.location[match(basename(new_files), names(run.type.tag.location))]
+  }
+  
   cat("\nReading data from files...\n")
   newdat <- list()
-  for (filei in new_files) {
-    add.dat <- tryCatch(fileToLongdat(filei, run.type.tag.location, plate.id.tag.location = plate.id.tag.location),
+  for (i in 1:length(new_files)) {
+    add.dat <- tryCatch(fileToLongdat(new_files[i], run.type.tag.location[i], plate.id.tag.location = plate.id.tag.location, guess_run_type_later = guess_run_type_later),
                         error = function(e) {
                           warning(paste0(e))
                           return(data.table())
