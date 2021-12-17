@@ -131,7 +131,7 @@ checkForAllParameters <- function(filei, file_col1, file_col2) {
   # find the next blank line after well averages index
   next.blank.row.dist <- which(is.na(file_col1[well.averages.rowi:length(file_col1)]) | file_col1[well.averages.rowi:length(file_col1)] == "")[1]
   
-  # check if the data includes all of the wanted acitivity measure
+  # check if the data includes all of the wanted activity measures
   missing_paramaters <- setdiff(acsn_map$file_acsn, file_col1[(well.averages.rowi + 2):(well.averages.rowi + next.blank.row.dist - 2)])
   
   # if only missing one or the other of 'Half Width at Half Height of Cross-Correlation' or 'Width at Half Height of Cross-Correlation', that is okay
@@ -207,10 +207,11 @@ runChecks <- function(files, check.settings = F, check.parameters = T, check.tim
               "timing_summary" = timing_summary))
 }
 
-writeCheckSummary <- function(output.dir, dataset_title, check.settings = F, check.parameters = T, check.timing = T) {
+writeCheckSummary <- function(output.dir, dataset_title, check.settings = F, check.parameters = T, check.timing = T,
+                              run_without_sink = FALSE) {
   
   check_summary_file <- paste0(output.dir, "/",dataset_title,"_check_summary_",as.character.Date(Sys.Date()),".txt")
-  sink(check_summary_file)
+  if(!run_without_sink) sink(check_summary_file)
   cat("Created with the script check-functions.R, writeCheckSummary() on",as.character.Date(Sys.Date()),sep = " ")
   
   # will read from the files_log in output.dir, as well as create the check_summary file in output.dir
