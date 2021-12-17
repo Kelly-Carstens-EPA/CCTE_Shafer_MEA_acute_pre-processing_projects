@@ -2,9 +2,9 @@ rm(list = ls())
 ###################################################################################
 # USER INPUT
 ###################################################################################
-start.dir <- "L:/Lab/NHEERL_MEA"
+start.dir <- "L:/Lab/NHEERL_MEA/TSCA2019/Acute TSCA Conc Response"
 dataset_title <- "TSCA2019" # e.g. "name2020"
-select.neural.stats.files <- T # select new neural stats files, or use the files in the most recent neural_stats_files_log?
+select.neural.stats.files <- F # select new neural stats files, or use the files in the most recent neural_stats_files_log?
 select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
 run.type.tag.location <- 5 # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
 spidmap_file <- ""
@@ -37,25 +37,124 @@ sapply(scripts, source)
 acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv")))
 acsn_map <- acsn_map[, .(acsn, acnm)]
 
+# Just want to get a list of all cultures in the main folder
+main.folders <- list.files(path = 'L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response', pattern = '[0-9]{8}', include.dirs = T)
+cat(main.folders, sep ='\n')
+
+# How differentiate between treated and controls with this naming convention?
+
+
 cat(paste0(dataset_title, " MEA Acute TCPL Level 0 Data Prep Running Log\nDate: ",as.character.Date(Sys.Date()),"\n"))
 cat("\nLevel 0 - Gather and Check Files:\n")
+
+# Scan for readme's that might affect dosing, wllq
+txt.files <- list.files(path = start.dir, pattern = '\\.txt', recursive = T, full.names = T)
+readmes <- txt.files[grepl('read( )*me',tolower(txt.files))]
+for (readme in readmes) {
+  cat(dirname(readme),'\n')
+  cat(scan(readme, what = character(), sep = '\n', quiet = T), sep = '\n')
+  cat('\n')
+}
+# empty - no readme's to check
 
 # select input files to use, store files in .txt file
 if (select.neural.stats.files) {
   selectInputFiles(start.dir, main.output.dir, dataset_title, files_type = "neural_stats")
+  
+  # Using a new method to select files instead
+  # for each culture, get all files under "Neural Statistic Compiler" folder
+  # if there are not exactly 6 files per folder -> flag (including if there are just 0)
+  neural.stats.files <- c()
+  for (folderi in main.folders) {
+    add.files <- list.files(path = file.path('L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response',folderi,'Neural Statistic Compiler'), pattern = '\\.csv', full.names = T,
+                            recursive = T)
+    neural.stats.files <- c(neural.stats.files, add.files)
+  }
+  length(neural.stats.files) # 255
+  
+  # any cultures not match any files?
+  neural.stats.files.folders <- basename(dirname(dirname(neural.stats.files)))
+  setdiff(main.folders, neural.stats.files.folders)
+  # empty -> good
+  
+  # Any cultures not match exactly 6 files?
+  counts <- table(neural.stats.files.folders)
+  counts[counts != 6]
+  # neural.stats.files.folders
+  # 20201125 Culture G2 20210512 Culture G24 (200H02 may need repeat) 
+  #                   8                                             7
+  
+  # 20201125 - this is because of the issue with the break in recording
+  # I'm guessing that the file labelled "treated" is the attempt to calculate the averaged values
+  # However, the "treated" file is slighlty problematic for 2 reasons:
+  # - it doesn't contain any parameter data in the header
+  # - I don't understand how the values were calculated from the other 2 files 
+  #   (doesn't quite line up with sums, averages or time-weighted averages as I would guess)
+  # So I have created a version of a consensus file that I will use instead
+  neural.stats.files <- neural.stats.files[!basename(neural.stats.files) %in% c('AC_20201125_MW71-7113_13_00(001)(000).csv','AC_20201125_MW71-7113_13_00(002)(001).csv')]
+  
+  # 20210512 - there are 3 files for 75-8213
+  # Looking at AC_20210512_MW75-8213_13_35(001)(000).csv, it only contains a few rows of data, with none of the usual headers
+  # Is not usable in current state, will assume that the 002 version if what we want
+  neural.stats.files <- neural.stats.files[!basename(neural.stats.files) %in% c('AC_20210512_MW75-8213_13_35(001)(000).csv')]
+  
+  # REcheck
+  neural.stats.files.folders <- basename(dirname(dirname(neural.stats.files)))
+  counts <- table(neural.stats.files.folders)
+  counts[counts != 6] #empty, good
+  
+  # Write files to log
+  current.neural.files <- read_files(main.output.dir, files_type = 'neural_stats')
+  setdiff(basename(current.neural.files), basename(neural.stats.files))
+  # empty -> so there is nothign that I selected previously that I have not included
+  writeLogFile(neural.stats.files, main.output.dir, dataset_title, files_type = 'neural_stats')
+  
 }
+
+
 if (select.calculations.files) {
-  selectInputFiles(start.dir, main.output.dir, dataset_title, files_type = "calculations")
+  # selectInputFiles(start.dir, main.output.dir, dataset_title, files_type = "calculations")
+  
+  # Using new method:
+  
+  # Get cyto files (need plate maps)
+  calc.files <- c()
+  for (folderi in main.folders) {
+    add.files <- list.files(path = file.path('L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response',folderi), pattern = '\\.xlsx', full.names = T,
+                            recursive = F)
+    calc.files <- c(calc.files, add.files)
+  }
+  # Remove the dummy "ghost" files
+  calc.files <- Filter(f = function(x) !grepl('\\~\\$',basename(x)), calc.files)
+  length(calc.files) # 37
+  
+  # any cultures not match any files?
+  calc.files.folders <- basename(dirname(calc.files))
+  setdiff(main.folders, calc.files.folders)
+  # empty -> good
+  
+  # Any cultures not more than 1 file?
+  counts <- table(calc.files.folders)
+  counts[counts != 1] # empty!
+  
+  current.calc.files <- read_files(main.output.dir, files_type = 'calculations')
+  # error -> there is no calc file currently
+  # setdiff(basename(current.calc.files), basename(calc.files))
+  writeLogFile(calc.files, main.output.dir, dataset_title, files_type = 'calculations')
+  
 }
+
 
 # Check that at run.type.tag.location, there is one file with  _00 and 1 file with _01 for each plate
 # this is a fallable check, thought, bc the plate or date names may be incorrect in the file names
 run.type.tag.location <- checkFileNames(run.type.tag.location, main.output.dir, dataset_title, guess = T)
 # OUTPUT --------------------------------------------------------- 
-# Reading from TSCA2019_neural_stats_files_log_2021-05-10.txt...
-# Got 84 files.
+# Reading from TSCA2019_neural_stats_files_log_2021-10-25.txt...
+# Got 220 files.
 # Store the run.type.tag.location.vector
 # ---------------------------------------------------------------- 
+unique(run.type.tag.location) # 5 6 4
+
 
 # Check the neural stats files for common issues
 tryCatch(writeCheckSummary(main.output.dir, dataset_title), 
@@ -63,30 +162,103 @@ tryCatch(writeCheckSummary(main.output.dir, dataset_title),
            closeAllConnections()
            e } )  
 # OUTPUT --------------------------------------------------------- 
-# TSCA2019_check_summary_2021-05-10.txt is ready.
+# TSCA2019_check_summary_2021-12-16.txt is ready.
 # ---------------------------------------------------------------- 
-# parameters and timing summary look okay
+# all parameters present in every file
+# 1 file seems to have an analysis duration that is far too short:
+# AC_20210512_MW75-8213_13_35(002)(000).csv analysis duration is 420.75s
+# only about 7 min
+# I will ask Kathleen if this is the only version of the 
 
 # extract all of the data from the files and transform into long data format (dat1)
 extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
 # OUTPUT --------------------------------------------------------- 
 # Level 1 - Extract All Data:
-# 
-# Reading from TSCA2019_neural_stats_files_log_2021-05-10.txt...
-# Got 84 files.
+#   
+#   Reading from TSCA2019_neural_stats_files_log_2021-12-16.txt...
+# Got 220 files.
 # Reading data from files...
-# Processed AC_20201104_MW71-7104_13_00(000)(000).csv 
-# Processed AC_20201104_MW71-7104_13_00(001)(000).csv 
-# Processed AC_20201104_MW71-7105_13_00(001)(000).csv 
-# Processed AC_20201104_MW71-7105_13_00(002)(000).csv
+# Processed AC_20201125_MW71-7111_13_00(001)(000).csv 
+# Processed AC_20201125_MW71-7111_13_00(002)(000).csv 
+# Processed AC_20201125_MW71-7112_13_00(000)(000).csv 
+# Processed AC_20201125_MW71-7112_13_00(001)(000).csv 
+# Processed AC_20201125_MW71-7115_15_00(000)(000).csv 
+# Processed AC_20201125_MW71-7115_15_00(001)(000).csv 
 # ...
-# TSCA2019_dat1_2021-05-10.RData is ready.
+# TSCA2019_dat1_2021-12-16.RData is ready.
 # Summary of dates/plates with wllq=0 at Level 1:
-# (42 plates afffected)
+# (73 plates afffected)
+# over 50 instances of this warning:
+# Warning messages:
+# 1: In fileToLongdat(new_files[i], run.type.tag.location[i],  ... : 
+#                       run type cannot be determined for AC_20210505_MW75-8207_13_35(000)(000).csv.
+#                     No wllq checks will be done for this recording.
 # ---------------------------------------------------------------- 
+
+# Options:
+# - try to determine how the function works to determine the run type, edi tit so that all my file names will be interpretted correctly
+# - just assign the run_type here, and re-do the wllq assignments here
+
+# Let's just review how the function works,
+# then see how bad this situation is (can I write a simple rule, or much easier to just fix on a case by case basis here?)
+
+# How filetoLongdat guesses the run type:
+run_type <- switch(substring(run.type.tag,1,2), 
+                   "00" = "baseline",
+                   "01" = "treated",
+                   sub("\\.csv","",run.type.tag))
+# okay, so this is pretty rigid
 
 # view dat1
 dat1 <- get_latest_dat(lvl = "dat1", dataset_title)
+
+dat1[, .N, by = .(run_type)]
+#        run_type      N
+# 1:     baseline 301344
+# 2: 35(000)(000)  40128
+# 3: 35(001)(000)  38016
+# 4: 35(002)(000)  10560
+# 5: 35(003)(000)   8448
+# 6: 35(004)(000)   8448
+# 7: 35(005)(000)   8448
+# 8: 35(006)(000)   4224
+# 9: 35(007)(000)   4224
+# 10: 35(008)(000)   4224
+# 11: 35(009)(000)   4224
+# 12: 35(010)(000)   4224
+# 13: 35(011)(000)   4224
+# 14: 15(000)(000)   4224
+# 15: 15(001)(000)   4224
+
+# Hmm... I'm curious if all/most of those not labelled baseline are just treated,
+# perhaps not much to sort through?
+dat1[, .N, by = .(run_type == 'baseline' | run_type == '35(000)(000)')]
+# run_type      N
+# 1:     TRUE 341472
+# 2:    FALSE 107712
+# Nope, there are far more that are currently labelled "baseline",
+# So I'm guessing that several that are labelled baseline
+# are not actually baseline
+
+dat1[run_type == 'baseline', .N, by = .(srcf)]
+#                                         srcf    N
+# 1: AC_20201104_MW71-7104_13_00(000)(000).csv 2064
+# 2: AC_20201104_MW71-7104_13_00(001)(000).csv 2064
+# 3: AC_20201104_MW71-7105_13_00(001)(000).csv 2064
+# 4: AC_20201104_MW71-7105_13_00(002)(000).csv 2064
+# Oh yeah, this is definitely not right
+
+
+# RESUME HERE -------------------------------------------------------------
+
+# Try to figure out how to assign the run type,
+# first just in this code, then see if you can translate a rule for most cases to fileToLongdat()
+# If you need to ask Kathleen or ask her to rename in some cases, that's valid too
+# But also thinking about the future... we need something that's goign to be dummy-proof
+# (either a hard and fast naming rule, or )
+
+
+# other things could check (from running this a logn time ago:) ------------
 print(dat1[, .N/length(unique(dat1$acnm)), by = "wllq_notes"])
 # view all experiment.date's and plate.id's. Are there any NA/missing labels?
 
@@ -230,7 +402,7 @@ dat4[grepl("DMSO",treatment), treatment := "DMSO"]
 # visually confirm if the PICRO, TTX, LYSIS were added before the second recording for MEA endpoints
 # varies across experiments, sometimes across days
 # if not, the PICRO, TTX, LYSIS wells only contained media for the MEA endpoints
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # RESPONSE:
 # yes/no, it appears that the PICRO, TTX, LYSIS were added before the second treatment
@@ -239,7 +411,7 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to refect this
 
 # for Cell Titer Blue assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # make updates if needed
 # dat4[, AB.trt.finalized := FALSE] # set this to TRUE for individual plates as you update as needed
@@ -249,11 +421,11 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # dat4[AB.trt.finalized == FALSE & grepl("AB",acnm) & treatment == "Media", `:=`(treatment = "Lysis",conc = 10, AB.trt.finalized = TRUE)]
 
 # # view updated stripchart
-# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 # view_activity_stripchart(plotdat, title_additions = "Media renamed to Lysis")
 
 # for LDH assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 
 # looks like media wells really do just contain Media
