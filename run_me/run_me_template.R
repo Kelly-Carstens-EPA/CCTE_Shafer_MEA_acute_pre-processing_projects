@@ -1,7 +1,7 @@
 rm(list = ls())
-###################################################################################
+# ----------------------------------------------------------------------- #
 # USER INPUT
-###################################################################################
+# ----------------------------------------------------------------------- #
 start.dir <- "L:/Lab/NHEERL_MEA"
 dataset_title <- "" # e.g. "name2020"
 select.neural.stats.files <- T # select new neural stats files, or use the files in the most recent neural_stats_files_log?
@@ -15,9 +15,9 @@ override_wllq_checks <- FALSE # set to TRUE only if you have already verified yo
 plate.id.tag.location <- numeric(0) # only update this if you have to, if your dataset does not include plate.id.tag in file headers
 noisy_functions <- TRUE
 standard_analysis_duration_requirement <- TRUE # default should be true
-###################################################################################
+# ----------------------------------------------------------------------- #
 # END USER INPUT
-###################################################################################
+# ----------------------------------------------------------------------- #
 
 library(data.table)
 library(openxlsx)
@@ -36,8 +36,20 @@ sapply(scripts, source)
 acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv")))
 acsn_map <- acsn_map[, .(acsn, acnm)]
 
+
+# Level 0 - Gather and Check Files ----------------------------------------
+
 cat(paste0(dataset_title, " MEA Acute TCPL Level 0 Data Prep Running Log\nDate: ",as.character.Date(Sys.Date()),"\n"))
 cat("\nLevel 0 - Gather and Check Files:\n")
+
+# Scan for readme's that might affect dosing, wllq
+txt.files <- list.files(path = start.dir, pattern = '\\.txt', recursive = T, full.names = T)
+readmes <- txt.files[grepl('read( )*me',tolower(txt.files))]
+for (readme in readmes) {
+  cat(dirname(readme),'\n')
+  cat(scan(readme, what = character(), sep = '\n', quiet = T), sep = '\n')
+  cat('\n')
+}
 
 # select input files to use, store files in .txt file
 if (select.neural.stats.files) {
@@ -50,24 +62,27 @@ if (select.calculations.files) {
 # Check that at run.type.tag.location, there is one file with  _00 and 1 file with _01 for each plate
 # this is a fallable check, thought, bc the plate or date names may be incorrect in the file names
 checkFileNames(run.type.tag.location, main.output.dir, dataset_title)
-# OUTPUT --------------------------------------------------------- 
+# OUTPUT -------------------------------------------------------- #
 # 
-# ---------------------------------------------------------------- 
+# --------------------------------------------------------------- #
 
 # Check the neural stats files for common issues
 tryCatch(writeCheckSummary(main.output.dir, dataset_title), 
          error = function(e){
            closeAllConnections()
            e } )  
-# OUTPUT --------------------------------------------------------- 
+# OUTPUT -------------------------------------------------------- #
 # 
-# ---------------------------------------------------------------- 
+# --------------------------------------------------------------- #
+
+
+# Level 1 - Extract data from files and melt ------------------------------
 
 # extract all of the data from the files and transform into long data format (dat1)
 extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location)
-# OUTPUT --------------------------------------------------------- 
+# OUTPUT -------------------------------------------------------- #
 # 
-# ---------------------------------------------------------------- 
+# --------------------------------------------------------------- #
 
 # view dat1
 dat1 <- get_latest_dat(lvl = "dat1", dataset_title)
@@ -75,33 +90,43 @@ print(dat1[, .N/length(unique(dat1$acnm)), by = "wllq_notes"])
 # view all experiment.date's and plate.id's. Are there any NA/missing labels?
 rm(dat1)
 
+
+# Level 2 - Collapse treated and baseline recordings ----------------------
+
 # collapse the plate data by calculating the percent change in activity (dat2)
 collapsePlateData(main.output.dir, dataset_title, main.dir = root_output_dir)
-# OUTPUT --------------------------------------------------------- 
+# OUTPUT -------------------------------------------------------- #
 # 
-# ---------------------------------------------------------------- 
+# --------------------------------------------------------------- #
 
 # look at data so far
 dat2 <- get_latest_dat(lvl = "dat2", dataset_title)
 dat2[wllq==1, summary(rval)]
-# OUTPUT --------------------------------------------------------- 
+# OUTPUT -------------------------------------------------------- #
 # 
 #
-# ---------------------------------------------------------------- 
+# --------------------------------------------------------------- #
 rm(dat2)
+
+
+# Level 3 - Get cytotoxicity data and merge -------------------------------
 
 # get cytotox data
 cytodat <- getAllCytoData(main.output.dir, dataset_title)
-# OUTPUT --------------------------------------------------------- 
+# OUTPUT -------------------------------------------------------- #
 # 
-# ---------------------------------------------------------------- 
+# --------------------------------------------------------------- #
 
 # combine the cytodat with dat2, add trt, conc, and wllq to ea (dat3)
 combineNeuralAndCyto(cytodat, main.output.dir, dataset_title)
-# OUTPUT --------------------------------------------------------- 
+# OUTPUT -------------------------------------------------------- #
 # 
-# ---------------------------------------------------------------- 
+# --------------------------------------------------------------- #
 rm(cytodat)
+
+
+
+# Level 4 - Finalize well ID information ----------------------------------
 
 # load dat3 and finalize it
 cat("\n\nLevel 4 - Finalize well ID information:\n")
@@ -110,7 +135,7 @@ dat4[, dat2 := NULL]
 dat4[, dat3 := basename(RData_files_used)]
 
 
-# FINALIZE WLLQ
+# * FINALIZE WLLQ ---------------------------------------------------------
 cat("\nFinalize Wllq:")
 # set wllq to zero where rval is NA
 cat("\nNA rval's:",dat4[wllq==1 & is.na(rval),.N])
@@ -129,7 +154,8 @@ cat("\nWell quality set to 0 for these rval's.\n")
 graphics.off()
 pdf(file = file.path(main.output.dir, paste0(dataset_title, "_summary_figures_report_",as.character.Date(Sys.Date()),".pdf")), width = 10, height = 8)
 
-# VERIFY TREATMENT LABELS FOR CONTROLS IN NEURAL AND CYTOTOX ASSAYS
+
+# * VERIFY TREATMENT LABELS FOR CONTROLS IN NEURAL AND CYTOTOX ASSAYS -----
 
 cat("\nVerifying control compound labels:\n")
 # view and standardize treatment names, so can compare all relevant values below
@@ -139,7 +165,7 @@ dat4[grepl("DMSO",treatment), treatment := "DMSO"]
 # visually confirm if the PICRO, TTX, LYSIS were added before the second recording for MEA endpoints
 # varies across experiments, sometimes across days
 # if not, the PICRO, TTX, LYSIS wells only contained media for the MEA endpoints
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # RESPONSE:
 # yes/no, it appears that the PICRO, TTX, LYSIS were added before the second treatment
@@ -148,7 +174,7 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to refect this
 
 # for Cell Titer Blue assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # make updates if needed
 # dat4[, AB.trt.finalized := FALSE] # set this to TRUE for individual plates as you update as needed
@@ -158,11 +184,11 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # dat4[AB.trt.finalized == FALSE & grepl("AB",acnm) & treatment == "Media", `:=`(treatment = "Lysis",conc = 10, AB.trt.finalized = TRUE)]
 
 # # view updated stripchart
-# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 # view_activity_stripchart(plotdat, title_additions = "Media renamed to Lysis")
 
 # for LDH assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 
 # looks like media wells really do just contain Media
@@ -182,7 +208,9 @@ cat(dat4[, unique(treatment)], sep = ", ")
 cat("\n")
 
 
-# ASSIGN SPIDS
+
+# * ASSIGN SPIDS ----------------------------------------------------------
+
 cat("\nAssign spid's:\n")
 cat("Using spidmap file:",spidmap_file,"\n")
 spidmap <- as.data.table(read_excel(spidmap_file, sheet = use_sheet))
@@ -211,15 +239,19 @@ if(any(is.na(unique(dat4$spid)))) {
 cat("Number of unique spids:",dat4[,length(unique(spid))],"\n")
 
 
-# PREPARE LDH P WELLS (must verify wllq, treatments first)
+
+# * PREPARE LDH P WELLS  --------------------------------------------------
+# (must verify wllq, treatments first)
 dat4 <- prepare_LDH_p_wells(dat4)
 
 
-# ASSIGN WLLT
+
+# * ASSIGN WLLT -----------------------------------------------------------
 dat4 <- assign_wllt(dat4)
 
 
-# CHECK CONC'S
+
+# * CHECK CONC'S ----------------------------------------------------------
 cat("\nFinalize Concentrations:\n")
 dat4[, conc_original := conc]
 dat4[, unique(conc)] # any NA's? any non-numeric? Any 0? does it look like conc correction was done?
@@ -255,11 +287,15 @@ cat("CHANGES MADE/rationale")
 dat4 <- assign_common_conc(dat4)
 
 
-# ASSIGN ACID
+
+# * ASSIGN ACID -----------------------------------------------------------
 cat("\nAssign ACId:\n")
 cat("(not doing this for now, since new acnm's need to be registered)\n")
 # dat4 <- add_acid(dat4) # holding off, need to register new acid's
 
+
+
+# Final checks and save ---------------------------------------------------
 
 # check that all data is there, nothing is missing, view plots
 data_checks(dat4)
