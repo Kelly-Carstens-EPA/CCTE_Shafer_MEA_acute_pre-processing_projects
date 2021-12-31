@@ -33,7 +33,7 @@ scripts <- list.files(path = "../mea-acute-neural-stats-to-mc0-scripts", pattern
 sapply(scripts, source)
 
 # loading acsn_acnm map
-acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv")))
+acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv"), stringsAsFactors = FALSE))
 acsn_map <- acsn_map[, .(acsn, acnm)]
 
 
