@@ -84,7 +84,8 @@ fileToLongdat <- function(filei, run.type.tag.location,
     plate.id <- strsplit(basename(filei), split = "_")[[1]][plate.id.tag.location]
     plate.id <- sub(" ","",plate.id)
   }
-  if (nchar(plate.id) < 3) stop(paste0("\nplate.id not found."))
+  # if (nchar(plate.id) < 3) stop(paste0("\nplate.id not found."))
+  if (nchar(plate.id) < 3) warning(paste0('no plate.id found for',basename(filei),'\n'))
   
   date <- headdat[grepl("[Ee]xperiment [Ss]tart [Tt]ime",file_col1), format(as.Date(file_col2, format = "%m/%d/%Y"), "%Y%m%d")]
   if (length(date) == 0 || is.na(date)) stop(paste0("\ndate not found."))
@@ -94,7 +95,7 @@ fileToLongdat <- function(filei, run.type.tag.location,
   setting_min.num.spks.network.burst <- headdat[grepl("Minimum Number of Spikes \\(network bursts\\)",file_col1), as.numeric(file_col2)]
   setting_axis.version <- headdat[grepl("AxIS Version",file_col1), paste0(unique(file_col2),collapse=",")]
   original_file_time <- headdat[grepl("Original File Time",file_col1), as.character(file_col2)]
-  exp_start_time <- headdat[grepl("Experiment Start Time",file_col1), as.character(file_col2)]
+  experiment_start_time <- headdat[grepl("Experiment Start Time",file_col1), as.character(file_col2)]
   
   if (include.all.settings) {
     
@@ -137,6 +138,8 @@ fileToLongdat <- function(filei, run.type.tag.location,
   longdat[, plate.id := plate.id]
   longdat[, experiment.date := date]
   longdat[, apid := date]
+  longdat[, original_file_time := original_file_time]
+  longdat[, experiment_start_time := experiment_start_time]
   
   # rowi and coli
   longdat[, coli := sub(pattern = "[[:alpha::]]*","",well)] # remove the letters from well to get coli
@@ -147,48 +150,12 @@ fileToLongdat <- function(filei, run.type.tag.location,
   
   # add srcf, run_type
   longdat[, srcf := basename(filei)]
-  longdat[, run_type := run_type]
-  
+
   # add the analysis timing data
   longdat[, `:=`(analysis_start = analysis.start, analysis_duration = analysis.duration)]
   
   # add other settings data
   longdat[, `:=`("setting_min.num.spks.network.burst" = setting_min.num.spks.network.burst, "setting_axis.version" = setting_axis.version)]
-  
-  
-  # SET THE WELL QUALITY
-  
-  # for baseline recordings, do 2 checks for wllq
-  if (run_type == "baseline") {
-    
-    longdat[, wllq := 1] # set the default wllq
-    longdat[, wllq_notes := ""]
-    
-    # if nAE is less than 10 or is NA, set wllq=0
-    low_ae_wells <- longdat[acsn == "Number of Active Electrodes" & (activity_value < 10 | is.na(activity_value)), well]
-    longdat[well %in% low_ae_wells, `:=` (wllq = 0, wllq_notes = "Baseline # of AE < 10; ")]
-    
-    # if the MFR is very low or near the theoretical upper limit, remove that well
-    # see the script mfr_baseline_cutoff_investigation.R 
-    # or the notbeook 'MEA Acute Pre-Process for TCPL', Tab "Development", Page "Mean Firing Rate Baseline Cutoff"
-    # for more details
-    mfr_upper_threshold <- 3.4036511 # this is the 95th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
-    mfr_lower_threshold <- 0.6377603 # this is the 5th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
-    high_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & activity_value > mfr_upper_threshold, well]
-    longdat[well %in% high_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR > ",mfr_upper_threshold," Hz; "))]
-    low_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & (activity_value < mfr_lower_threshold | is.na(activity_value)), well]
-    longdat[well %in% low_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR < ",mfr_lower_threshold," Hz; "))]
-  }
-  else {
-    # don't assign wllq for treated wells (yet)
-    longdat[, `:=` (wllq = NA_integer_, wllq_notes = "")]
-  }
-  # for baseline or treated, if recording length is very short or very  long, remove it
-  if (standard_analysis_duration_requirement) {
-    if (abs(analysis.duration - 2400) > 1400) cat(basename(filei),"will be removed. Recording length is",analysis.duration,"\n")
-    longdat[analysis.duration < 1000, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length < 1000 s; "))]
-    longdat[analysis.duration > 3800, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length > 3800 s; "))]    
-  }
   
   # map to the acnm's. Throw an error if any acsn's aren't in the acsn map table
   longdat <- merge(longdat, acsn_map, by = c("acsn"), all.x = TRUE)

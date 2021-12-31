@@ -34,7 +34,7 @@ scripts <- list.files(path = "../mea-acute-neural-stats-to-mc0-scripts", pattern
 sapply(scripts, source)
 
 # loading acsn_acnm map
-acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv")))
+acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv"), stringsAsFactors = F))
 acsn_map <- acsn_map[, .(acsn, acnm)]
 
 # Just want to get a list of all cultures in the main folder
@@ -172,6 +172,66 @@ tryCatch(writeCheckSummary(main.output.dir, dataset_title),
 
 # extract all of the data from the files and transform into long data format (dat1)
 extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
+
+# Troubleshooting an error: 
+# get the files from the files_log that are not already in dat1
+files_logs <- list.files(path = main.output.dir, pattern = paste0("neural_stats_files_log_"), recursive = F, full.names = T)
+files_log <- files_logs[order(basename(files_logs), decreasing = T)[1]] # get the most recent files log
+all_files <- read_files(output.dir, files_log)
+i <- 1
+test1 <- fileToLongdat(all_files[i], run.type.tag.location[i], plate.id.tag.location = numeric(0), guess_run_type_later = F)
+str(test1)
+ncol(test1) # 19
+# these updates might have fixed it
+
+extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
+
+# I think there might be something wrong with file 6
+i <- 6
+test6 <- fileToLongdat(all_files[i], run.type.tag.location[i], plate.id.tag.location = numeric(0), guess_run_type_later = F)
+str(test6)
+# hmm, looks fine to me
+ncol(test6) # 19
+setdiff(names(test1), names(test6)) # empty
+
+extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
+
+# maybe actually file #43?
+i <- 43
+test43 <- fileToLongdat(all_files[i], run.type.tag.location[i], plate.id.tag.location = numeric(0), guess_run_type_later = F)
+str(test43)
+# nope, totall fine
+
+# Why am I getting this error???!
+
+# oh wait, I had set append = TRUE :(((((((((
+extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = F)
+# success!
+# With warnings that 6 plates don't have a plate id
+# (I realized this is because they don't have a plate id in the file header,
+# bc ran with different version of software)
+
+
+# RESUME HERE --------------------------------
+# Motivation: run type tags in these files are quite inconsistent
+# Would be so much easier to just use the file times as reported by axis
+# dat1 from 12/30/2021 was made with updated level 1 functions
+# contains exp start time, original file time,
+# but no wllq or run type
+
+# Things to clean:
+# - 6 plates are missing plate.id (bc ran with diff version of axis). Get those from file names
+#   (perhaps add some flexibility to fileToLongdat to facilitate this in future?)
+
+dat1 <- get_latest_dat('dat1', dataset_title)
+dat1[, lapply(.SD, function(x) sum(is.na(x))), .SDcols = names(dat1)]
+# So the activity_value is the only column that is NA sometimes -> didn't actually have to use fill = T
+
+# Next step is to assign the run_type (see determine_run_type for ideas),
+# followed by assigning the wllq
+# Then make this flow into existing level 2
+
+
 # OUTPUT --------------------------------------------------------- 
 # Level 1 - Extract All Data:
 #   
