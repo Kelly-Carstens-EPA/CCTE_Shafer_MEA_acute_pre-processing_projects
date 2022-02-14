@@ -9,7 +9,7 @@ select.calculations.files <- T # select new calculations files, or use the files
 run.type.tag.location <- 5 # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
 spidmap_file <- "L:/Lab/NHEERL_MEA/Project - DNT 2019/All Assays_list_toxcast_OECD 20190524.xlsx"
 use_sheet <- "MEA Acute Conc Res" # sheet name in spidmap_file
-# optional adjutsment; usually can use defaults:
+# optional adjustment; usually can use defaults:
 root_output_dir <- "L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl" # where the dataset_title folder will be created
 override_wllq_checks <- FALSE # set to TRUE only if you have already verified your wllq updates
 plate.id.tag.location <- numeric(0) # only update this if you have to, if your dataset does not include plate.id.tag in file headers
