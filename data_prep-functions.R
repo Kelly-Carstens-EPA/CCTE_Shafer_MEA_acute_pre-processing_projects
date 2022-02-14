@@ -32,8 +32,8 @@ getTagPhraseIndex <- function(char_vector, grep_tagPhrases, errorifmissing = T, 
 # # throws an error, since checkMultiple default is T
 
 
-fileToLongdat <- function(filei, run.type.tag.location,
-                          plate.id.tag.location = numeric(0), include.all.settings = F, guess_run_type_later = F,
+fileToLongdat <- function(filei,
+                          plate.id.tag.location = numeric(0), include.all.settings = F,
                           standard_analysis_duration_requirement = get('standard_analysis_duration_requirement', envir = .GlobalEnv)) {
   
   file_scan <- scan(file = filei, what = character(), sep = "\n", blank.lines.skip = F, quiet=T) # empty lines will be just ""
@@ -85,7 +85,10 @@ fileToLongdat <- function(filei, run.type.tag.location,
     plate.id <- sub(" ","",plate.id)
   }
   # if (nchar(plate.id) < 3) stop(paste0("\nplate.id not found."))
-  if (nchar(plate.id) < 3) warning(paste0('no plate.id found for',basename(filei),'\n'))
+  if (plate.id == 'MW') {
+    plate.id <- NA_character_
+    warning(paste0('no plate.id found for',basename(filei),'\n'))
+  }
   
   date <- headdat[grepl("[Ee]xperiment [Ss]tart [Tt]ime",file_col1), format(as.Date(file_col2, format = "%m/%d/%Y"), "%Y%m%d")]
   if (length(date) == 0 || is.na(date)) stop(paste0("\ndate not found."))
@@ -148,7 +151,7 @@ fileToLongdat <- function(filei, run.type.tag.location,
   longdat[, rowi := sapply(rowc, function(x) utf8ToInt(x) - utf8ToInt("A") + 1)]
   longdat[, rowc := NULL]
   
-  # add srcf, run_type
+  # add srcf
   longdat[, srcf := basename(filei)]
 
   # add the analysis timing data
