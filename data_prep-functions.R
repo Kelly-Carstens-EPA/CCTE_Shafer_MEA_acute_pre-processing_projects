@@ -106,7 +106,7 @@ fileToLongdat <- function(filei, run.type.tag.location,
   if (length(date) == 0 || is.na(date)) stop(paste0("\ndate not found."))
   
   analysis.start <- headdat[grepl("Analysis Start",file_col1), as.numeric(file_col2)]
-  analysis.duration <- headdat[grepl("Analysis Duration",file_col1), as.numeric(file_col2)]
+  analysis_duration <- headdat[grepl("Analysis Duration",file_col1), as.numeric(file_col2)]
   setting_min.num.spks.network.burst <- headdat[grepl("Minimum Number of Spikes \\(network bursts\\)",file_col1), as.numeric(file_col2)]
   setting_axis.version <- headdat[grepl("AxIS Version",file_col1), paste0(unique(file_col2),collapse=",")]
   
@@ -164,7 +164,7 @@ fileToLongdat <- function(filei, run.type.tag.location,
   longdat[, run_type := run_type]
   
   # add the analysis timing data
-  longdat[, `:=`(analysis_start = analysis.start, analysis_duration = analysis.duration)]
+  longdat[, `:=`(analysis_start = analysis.start, analysis_duration = analysis_duration)]
   
   # add other settings data
   longdat[, `:=`("setting_min.num.spks.network.burst" = setting_min.num.spks.network.burst, "setting_axis.version" = setting_axis.version)]
@@ -199,9 +199,9 @@ fileToLongdat <- function(filei, run.type.tag.location,
   }
   # for baseline or treated, if recording length is very short or very  long, remove it
   if (standard_analysis_duration_requirement) {
-    if (abs(analysis.duration - 2400) > 1400) cat(basename(filei),"will be removed. Recording length is",analysis.duration,"\n")
-    longdat[analysis.duration < 1000, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length < 1000 s; "))]
-    longdat[analysis.duration > 3800, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length > 3800 s; "))]    
+    if (abs(analysis_duration - 2400) > 1400) cat(basename(filei),"will be removed. Recording length is",analysis_duration,"\n")
+    longdat[analysis_duration < 1000, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length < 1000 s; "))]
+    longdat[analysis_duration > 3800, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length > 3800 s; "))]    
   }
   
   # map to the acnm's. Throw an error if any acsn's aren't in the acsn map table
