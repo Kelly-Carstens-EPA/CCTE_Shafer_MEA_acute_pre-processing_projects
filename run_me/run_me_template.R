@@ -307,6 +307,11 @@ graphics.off()
 createWllqSummary(dat4, dataset_title)
 cat("(note that the wllq is not quite final -\nwllq will be updated for outlier DMSO wells will before creating lvl 0 snapshot)\n")
 
+# Check for the expected number of technical replicates
+dat4[wllt == 't', .(length(unique(paste0(apid,rowi,coli)))), by = .(spid, conc)][V1 != 3]
+# do you except these cases to have more than or less than 3 replicates?
+# Were some samples repeated, and only certain repeats meant to be included?
+
 # save dat4
 dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3)]
 save(dat4, file = file.path(main.output.dir, paste0("output/",dataset_title,"_dat4_",as.character.Date(Sys.Date()),".RData")))

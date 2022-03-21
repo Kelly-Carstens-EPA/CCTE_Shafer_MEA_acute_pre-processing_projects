@@ -219,17 +219,95 @@ extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.t
 # contains exp start time, original file time,
 # but no wllq or run type
 
-# Things to clean:
-# - 6 plates are missing plate.id (bc ran with diff version of axis). Get those from file names
-#   (perhaps add some flexibility to fileToLongdat to facilitate this in future?)
-
+# Any values NA?
 dat1 <- get_latest_dat('dat1', dataset_title)
 dat1[, lapply(.SD, function(x) sum(is.na(x))), .SDcols = names(dat1)]
 # So the activity_value is the only column that is NA sometimes -> didn't actually have to use fill = T
 
-# Next step is to assign the run_type (see determine_run_type for ideas),
+# Resolving warnings of missing plate.id's
+dat1[plate.id == 'MW', .N, by = .(experiment.date, srcf)]
+#    experiment.date                                                              srcf    N
+# 1:        20210824 AC_20210811_MW75-9119_13(000)_Neural Statistics Compiler(000).csv 2064
+# 2:        20210824 AC_20210811_MW75-9119_13(001)_Neural Statistics Compiler(000).csv 2064
+# 3:        20210824 AC_20210811_MW75-9120_13(000)_Neural Statistics Compiler(000).csv 2064
+# 4:        20210824 AC_20210811_MW75-9120_13(001)_Neural Statistics Compiler(000).csv 2064
+# 5:        20210824 AC_20210811_MW75-9201_13(000)_Neural Statistics Compiler(000).csv 2064
+# 6:        20210824 AC_20210811_MW75-9201_13(001)_Neural Statistics Compiler(000).csv 2064
+dat1[plate.id == 'MW', plate.id := stri_extract_first(srcf, regex = 'MW[0-9\\-]{7}')]
+dat1[experiment.date == '20210824', .N, by = .(srcf, plate.id)]
+#                                                                 srcf  plate.id    N
+# 1: AC_20210811_MW75-9119_13(000)_Neural Statistics Compiler(000).csv MW75-9119 2064
+# 2: AC_20210811_MW75-9119_13(001)_Neural Statistics Compiler(000).csv MW75-9119 2064
+# 3: AC_20210811_MW75-9120_13(000)_Neural Statistics Compiler(000).csv MW75-9120 2064
+# 4: AC_20210811_MW75-9120_13(001)_Neural Statistics Compiler(000).csv MW75-9120 2064
+# 5: AC_20210811_MW75-9201_13(000)_Neural Statistics Compiler(000).csv MW75-9201 2064
+# 6: AC_20210811_MW75-9201_13(001)_Neural Statistics Compiler(000).csv MW75-9201 2064
+# looks good!!
+
+# Next step is to assign the run_type
+# (see determine_run_type -> next need to address some formatting in times, then how to check all 5 run type assignment methods),
 # followed by assigning the wllq
 # Then make this flow into existing level 2
+
+# Determine the run type based on ordering of the run_type tag
+# (which was determined by the first tag in the file names that 
+# is unique for each pair of consecutive files when sort by file name) 
+file.names.split <- stri_split(str = names(run.type.tag.location), fixed = '_')
+run.type.tags <- unlist(lapply(1:length(run.type.tag.location), function(i) file.names.split[i][[1]][run.type.tag.location[i]]))
+run.type.tag.location.tb <- data.table('srcf' = names(run.type.tag.location), 
+                                       'run.type.tag.location' = run.type.tag.location,
+                                       'run.type.tag' = run.type.tags)
+dat1 <- merge(dat1, run.type.tag.location.tb, by = 'srcf', all.x = T)
+dat1[, file_run_type_tag_rank := frank(run.type.tag, ties.method = 'dense'), by = .(experiment.date, plate.id)]
+
+# Convert file times from character to a comparable numeric value, e.g. POSIX?
+# e.g. as.POSIXct(..., format = ...)
+dat1[, experiment_start_time_posix := as.POSIXlt(experiment_start_time, format = c('%M/%d/%Y %H:%M:%OS')), by = .(srcf)]
+dat1[, original_file_time_posix := as.POSIXlt(original_file_time, format = c('%M/%d/%Y %H:%M:%OS')), by = .(srcf)]
+
+# Check for and fix any NAs in POSIX file time (time may be in incorrect format, or AM/PM did not copy from csv)
+dat1[is.na(experiment_start_time_posix) | is.na(original_file_time_posix), .N, by = .(srcf, original_file_time, experiment_start_time)]
+#                                         srcf original_file_time experiment_start_time    N
+# 1: AC_20210428_MW75-8205_15_00(000)(000).csv    5/13/2021 12:56       5/13/2021 12:33 2112
+# How does the treated file look?
+dat1[grepl('AC_20210428_MW75-8205_15',srcf), .N, by = .(srcf, original_file_time)]
+#                                         srcf  original_file_time    N
+# 1: AC_20210428_MW75-8205_15_00(000)(000).csv     5/13/2021 12:56 2112
+# 2: AC_20210428_MW75-8205_15_00(001)(000).csv 05/13/2021 14:03:00 2112
+# huh, so the dates in the treated file are formatted normally
+# I confirmed in the csv file that 5/13/2021 12:56 is "PM" ;)
+dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
+     original_file_time_posix := as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))]
+dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
+     experiment_start_time_posix := as.POSIXlt('05/13/2021 12:33:00', format = c('%M/%d/%Y %H:%M:%OS'))]
+
+# code snip for Kelly
+dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', .N] # 2112
+as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))
+dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', original_file_time_posix := as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))]
+dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', .N, by = .(original_file_time_posix)]
+class(as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS')))
+class(dat1$original_file_time_posix)
+
+dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
+     original_file_time_posix := as.Date(as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS')))]
+
+dat1[, original_file_time_posix := as.Date(as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS')))]
+dat1[, original_file_time_posix2 := as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))]
+
+
+# Determine the run type based on 3 other methods -> these methods are likely more reliable, but will compare them all
+dat1[, file_exp_start_time_rank := frank(experiment_start_time_posix, ties.method = 'dense'), by = .(experiment.date, plate.id)]
+dat1[, file_original_file_time_rank := frank(original_file_time_posix, ties.method = 'dense'), by = .(experiment.date, plate.id)]
+dat1[, file_name_rank := frank(srcf, ties.method = 'dense'), by = .(experiment.date, plate.id)]
+
+# How to compare all columns?
+# one idea...
+dat1[, multiple_unique_ranks := 
+       pmax(file_run_type_tag_rank, file_exp_start_time_rank, file_original_file_time_rank, file_name_rank)
+     - pmin(file_run_type_tag_rank, file_exp_start_time_rank, file_original_file_time_rank, file_name_rank)]
+
+
 
 
 # OUTPUT --------------------------------------------------------- 
