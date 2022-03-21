@@ -116,7 +116,7 @@ getFileCytoData <- function(sourcefile) {
   plate1_dat <- as.data.table(read.xlsx(sourcefile, sheet = "Plate 1", rows = 1:10, cols = 1:10, colNames = FALSE))
   colnames(plate1_dat) <- paste0("col",1:ncol(plate1_dat))
   exp_date_index <- which(plate1_dat == "Experiment ID", arr.ind = T) # returns a 2-element vector of the row and col index
-  experiment_date <- plate1_dat[exp_date_index[1], (exp_date_index[2] + 1)]
+  experiment_date <- plate1_dat[exp_date_index[1], unlist(.SD), .SDcols = exp_date_index[2] + 1]
   if (!('experiment_date' %in% ls())) {
     cat(paste0("Can't find experiment date in ",sourcefile,".\nSetting experiment_date to NA"))
     experiment_date <- NA_character_
