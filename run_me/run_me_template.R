@@ -171,7 +171,7 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # yes/no, it appears that the PICRO, TTX, LYSIS were added before the second treatment
 # rename the treatment in the wells as needed
 
-# for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to refect this
+# for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to reflect this
 
 # for Cell Titer Blue assay:
 plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
@@ -266,13 +266,13 @@ dat4[treatment == "DMSO",unique(conc)]
 # picro
 dat4[treatment == "PICRO", .N, by = "conc"]
 # 
-# based on lab notebook, this is usually 25
+# based on other lab notebook, this is usually 25
 # dat4[treatment == "PICRO", conc := "25"]
 
 # ttx
 dat4[treatment == "TTX", .N, by = "conc"]
 # 
-# based on lab notebook, this is usually 1
+# based on other lab notebook, this is usually 1
 # dat4[treatment == "TTX", conc := "1"]
 
 cat("\nConcentration Corrections:\n")

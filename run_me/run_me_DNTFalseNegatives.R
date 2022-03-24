@@ -277,15 +277,8 @@ combineNeuralAndCyto(cytodat, main.output.dir, dataset_title)
 # 
 # Loading...
 # DNTFalseNegatives_dat2_2022-03-21.RData 
-# Error in combineNeuralAndCyto(cytodat, main.output.dir, dataset_title) : 
-#   The following date_plate's are only found in dat2 (and not in cytodat): 20210831_MW75-9208, 20210831_MW75-9209, 20210831_MW75-9210
-# In addition: Warning message:
-# In combineNeuralAndCyto(cytodat, main.output.dir, dataset_title) :
-#   The following date_plate's are only found in cytodat (and not in dat2): 20210826_MW75-9208, 20210826_MW75-9209, 20210826_MW75-9210
-# Wllq will be set to 1 for all wells on these LDH/AB plates.
+# DNTFalseNegatives_dat3_2022-03-24.RData is ready.
 # --------------------------------------------------------------- #
-# Seems like culture was on 20210818
-# Experiment was 20210831
 rm(cytodat)
 
 
@@ -303,9 +296,9 @@ dat4[, dat3 := basename(RData_files_used)]
 cat("\nFinalize Wllq:")
 # set wllq to zero where rval is NA
 cat("\nNA rval's:",dat4[wllq==1 & is.na(rval),.N])
-#
+# 948
 cat("\nInf rval's (baseline==0):",dat4[wllq==1 & is.infinite(rval),.N])
-# 
+# 1
 dat4[is.na(rval), `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "rval is NA; "))]
 dat4[is.infinite(rval), `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "rval is Inf; "))]
 cat("\nWell quality set to 0 for these rval's.\n")
@@ -318,10 +311,12 @@ cat("\nWell quality set to 0 for these rval's.\n")
 graphics.off()
 pdf(file = file.path(main.output.dir, paste0(dataset_title, "_summary_figures_report_",as.character.Date(Sys.Date()),".pdf")), width = 10, height = 8)
 
+# RESUME HERE - confirm the treatment updates
 
 # * VERIFY TREATMENT LABELS FOR CONTROLS IN NEURAL AND CYTOTOX ASSAYS -----
 
 cat("\nVerifying control compound labels:\n")
+dat4[, treatment_org := treatment]
 # view and standardize treatment names, so can compare all relevant values below
 dat4[, .N, by = "treatment"]
 dat4[grepl("DMSO",treatment), treatment := "DMSO"]
@@ -329,17 +324,36 @@ dat4[grepl("DMSO",treatment), treatment := "DMSO"]
 # visually confirm if the PICRO, TTX, LYSIS were added before the second recording for MEA endpoints
 # varies across experiments, sometimes across days
 # if not, the PICRO, TTX, LYSIS wells only contained media for the MEA endpoints
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # RESPONSE:
-# yes/no, it appears that the PICRO, TTX, LYSIS were added before the second treatment
-# rename the treatment in the wells as needed
+# It appears that the TTX was added before the second treatment
+# but not the PICRO
+
+# Updating treatments
+dat4[treatment == 'PICRO', .N, by = .(plate.id, rowi, coli)]
+#     plate.id rowi coli  N
+# 1: MW75-9208    4    1 46
+# 2: MW75-9209    4    1 46
+# 3: MW75-9210    4    1 46
+dat4[treatment == 'PICRO', treatment := 'DMSO']
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+view_activity_stripchart(plotdat, title_additions = "D4 wells changed from PICRO to DMSO")
 
 # for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to refect this
 
 # for Cell Titer Blue assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
+# Well that definitely doesn't look right
+dat4[treatment == 'Media' & grepl('AB',acnm), .N, by = .(plate.id, rowi, coli)]
+#     plate.id rowi coli N
+# 1: MW75-9208    6    1 1
+# 2: MW75-9209    6    1 1
+# 3: MW75-9210    6    1 1
+dat4[treatment == 'Media' & grepl('AB',acnm), treatment := 'Lysis']
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+view_activity_stripchart(plotdat, title_additions = "F1 wells chnaged from Media to Lysis")
 # make updates if needed
 # dat4[, AB.trt.finalized := FALSE] # set this to TRUE for individual plates as you update as needed
 # 
@@ -348,13 +362,14 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # dat4[AB.trt.finalized == FALSE & grepl("AB",acnm) & treatment == "Media", `:=`(treatment = "Lysis",conc = 10, AB.trt.finalized = TRUE)]
 
 # # view updated stripchart
-# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 # view_activity_stripchart(plotdat, title_additions = "Media renamed to Lysis")
 
 # for LDH assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 
+# From template, a common scenario: 
 # looks like media wells really do just contain Media
 # actually makes some sense based on the assay - 
 # first, 50uL of culture Media from each well in MEA plate is transfered to LDH plate (so F1 just contains Media in LDH plate)
@@ -423,25 +438,34 @@ dat4[, unique(conc)] # any NA's? any non-numeric? Any 0? does it look like conc 
 # update conc for DMSO, PICRO, TTX, BIC, and full Lysis wells
 # dmso
 dat4[treatment == "DMSO",unique(conc)]
-# [1] "Control"
+# [1] "Control" "1"
+# "1" is from the wells that were labelled Media, but actually jsut contain DMSO
 # Use the percent DMSO by volume?
-# dat4[treatment == "DMSO", conc := "0.001"]
+dat4[treatment == "DMSO", conc := "0.001"]
 
 # picro
 dat4[treatment == "PICRO", .N, by = "conc"]
-# 
+# empty
 # based on lab notebook, this is usually 25
 # dat4[treatment == "PICRO", conc := "25"]
 
 # ttx
 dat4[treatment == "TTX", .N, by = "conc"]
-# 
-# based on lab notebook, this is usually 1
-# dat4[treatment == "TTX", conc := "1"]
+#    conc   N
+# 1:   25 138
+# based on other lab notebook, this is usually 1
+dat4[treatment == "TTX", conc := "1"]
 
 cat("\nConcentration Corrections:\n")
 # any other compounds to update??
 # need to do concentration correction??
+dat4[, .N, by = .(conc)]
+dat4[conc == 0, .N, by = .(treatment)]
+#    treatment   N
+# 1:     Media 135
+# 2:     Lysis   3
+# this is okay
+
 cat("CHANGES MADE/rationale")
 # cat("The following treatment have char conc. Will be set to NA:\n")
 # print(suppressWarnings(dat4[is.na(as.numeric(conc)), .N, by = c("spid","treatment","conc")]))
@@ -449,7 +473,6 @@ cat("CHANGES MADE/rationale")
 
 # final updates, view conc's, make table of control conc's
 dat4 <- assign_common_conc(dat4)
-
 
 
 # * ASSIGN ACID -----------------------------------------------------------
