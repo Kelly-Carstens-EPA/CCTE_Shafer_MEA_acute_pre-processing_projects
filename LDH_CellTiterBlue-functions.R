@@ -3,6 +3,7 @@
 prepare_LDH_p_wells <- function(dat4) {
   
   cat("\nPrepare LDH 'p' wells (using Lysis or Half Lysis wells):\n")
+  require(stringi)
   
   LDH_dat <- dat4[grepl("LDH",acnm)]
   
@@ -15,20 +16,20 @@ prepare_LDH_p_wells <- function(dat4) {
   apid_pwells <- LDH_dat[grepl("LDH",acnm) & grepl("(ysis)|(LYSIS)",treatment), 
                       .(pwells = paste0(sort(unique(treatment)),collapse=","), any_wllq1 = ifelse(1 %in% unique(wllq),1,0)), by = "apid"]
   
-  # for apid that have at least one ½ Lysis well with wllq=1, multiply the ½ Lysis values by 2 and set wllt = "p"
-  half.lysis.plates <- apid_pwells[grepl("½", pwells) & any_wllq1 == 1, apid]
-  LDH_dat[grepl("LDH",acnm) & apid %in% half.lysis.plates & grepl("½",treatment), 
+  # for apid that have at least one 1/2 Lysis well with wllq=1, multiply the 1/2 Lysis values by 2 and set wllt = "p"
+  half.lysis.plates <- apid_pwells[stri_detect(pwells, fixed = '1/2') & any_wllq1 == 1, apid]
+  LDH_dat[grepl("LDH",acnm) & apid %in% half.lysis.plates & stri_detect(treatment, fixed = '1/2'), 
        `:=`(treatment = paste0("2 * ",treatment), rval = 2*rval, wllt = "p")]
   
   # for these plates, set wllt for full lysis wells as "x". We don't want these to be part of the "p" wells on these plates
-  LDH_dat[apid %in% half.lysis.plates & grepl("(ysis)|(LYSIS)",treatment) & !grepl("½",treatment), wllt := "x"]
+  LDH_dat[apid %in% half.lysis.plates & grepl("(ysis)|(LYSIS)",treatment) & !stri_detect(treatment, fixed = '1/2'), wllt := "x"]
   
-  # for apid with no ½ Lysis well with wllq=1, label full Lysis wells as "p"
-  LDH_dat[apid %in% apid_pwells[!grepl("½", pwells) & any_wllq1 == 1, apid] & grepl("(ysis)|(LYSIS)",treatment), wllt := "p"]
+  # for apid with no 1/2 Lysis well with wllq=1, label full Lysis wells as "p"
+  LDH_dat[apid %in% apid_pwells[!stri_detect(pwells, fixed = '1/2') & any_wllq1 == 1, apid] & grepl("(ysis)|(LYSIS)",treatment), wllt := "p"]
   
-  if (length(apid_pwells[!grepl("½", pwells) & any_wllq1 == 1, apid]) > 1) {
-    cat("The following apid's do not have any ½ Lysis wells with wllq=1. Full Lysis wells will be used instead\n")
-    cat(sort(apid_pwells[!grepl("½", pwells) & any_wllq1 == 1, apid]), sep = "\n")
+  if (length(apid_pwells[!stri_detect(pwells, fixed = '1/2') & any_wllq1 == 1, apid]) > 1) {
+    cat("The following apid's do not have any 1/2 Lysis wells with wllq=1. Full Lysis wells will be used instead\n")
+    cat(sort(apid_pwells[!stri_detect(pwells, fixed = '1/2') & any_wllq1 == 1, apid]), sep = "\n")
   }
   
   cat("Treatments assigned to wllt 'p' for each apid:\n")
@@ -113,35 +114,35 @@ calculate_per_total_LDH <- function(dat4, use_half_lysis = T) {
   
   if (use_half_lysis) {
     # calculate the median DMSO well in each apid
-    print(dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("½ Lysis",treatment) & wllq == 1, median(rval), by = "apid"][order(apid)])
-    print(dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("½ Lysis",treatment) & wllq == 1, summary(rval)])
+    print(dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("? Lysis",treatment) & wllq == 1, median(rval), by = "apid"][order(apid)])
+    print(dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("? Lysis",treatment) & wllq == 1, summary(rval)])
     # we have to use the median, because we are trying to avoid situation where 1 plate is just really bad
     # don't want the small values there to pull down the median
     # maybe in the future I will look into 
     
     yrange <- dat4[grepl("LDH",acnm) & !grepl("(LDH)",treatment) & wllq == 1, range(rval)]
     boxplot(rval ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & treatment %in% c("DMSO","PICRO","TTX") & wllq == 1], ylim = yrange,
-            main = "LDH Blank-Corrected Values in DMSO, PICRO, and TTX wells by apid\n Squares are ½ Lysis wells, Median ½ Lysis wells are Blue")
-    stripchart(rval ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("½ Lysis",treatment) & wllq == 1],
+            main = "LDH Blank-Corrected Values in DMSO, PICRO, and TTX wells by apid\n Squares are ? Lysis wells, Median ? Lysis wells are Blue")
+    stripchart(rval ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("? Lysis",treatment) & wllq == 1],
                vertical = T, add = T, col = "gray")
-    stripchart(V1 ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("½ Lysis",treatment) & wllq == 1, median(rval), by = "apid"],
+    stripchart(V1 ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("? Lysis",treatment) & wllq == 1, median(rval), by = "apid"],
                vertical = T, add = T, col = "blue")
     
     # # check out by plate for the first culture, which looks a bit concerning
     # boxplot(rval ~ plate.id, dat4[apid == "20190528" & acnm == "NHEERL_MEA_acute_LDH" & treatment %in% c("DMSO","PICRO","TTX") & wllq == 1], ylim = c(-0.1, 1.7))
-    # stripchart(rval ~ plate.id, dat4[apid == "20190528" & acnm == "NHEERL_MEA_acute_LDH" & grepl("½ Lysis",treatment) & wllq == 1],
+    # stripchart(rval ~ plate.id, dat4[apid == "20190528" & acnm == "NHEERL_MEA_acute_LDH" & grepl("? Lysis",treatment) & wllq == 1],
     #            vertical = T, add = T)
     # # no, plate68-0811 is not lower in DMSO wells than the other 2
     # 
     # # seems silly, but what if we use mean instead?
     # boxplot(rval ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & treatment %in% c("DMSO","PICRO","TTX") & wllq == 1], ylim = c(-0.1, 1.7))
-    # stripchart(V1 ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("½ Lysis",treatment) & wllq == 1, mean(rval), by = "apid"],
+    # stripchart(V1 ~ apid, dat4[acnm == "NHEERL_MEA_acute_LDH" & grepl("? Lysis",treatment) & wllq == 1, mean(rval), by = "apid"],
     #            vertical = T, add = T)
     # # that does look better for the first exp date... but is that enough to justify it?
     
     # extract the LDH data
     LDH_dat <- dat4[acnm == "NHEERL_MEA_acute_LDH"] # wllq should already be zero where rval is NA
-    positive.controls <- LDH_dat[wllq == 1 & treatment == "½ Lysis", .(double.half.lysis.median.apid = 2*median(rval)), by = "apid"]
+    positive.controls <- LDH_dat[wllq == 1 & treatment == "? Lysis", .(double.half.lysis.median.apid = 2*median(rval)), by = "apid"]
     # make sure every apid has a positive control (possibly not if none wllq==1)
     if (nrow(positive.controls) != length(unique(dat4$apid))) stop(paste0(setdiff(unique(dat4$apid), positive.controls$apid)," does not have any 1/2 Lysis wells with wllq=1"))
     LDH_dat <- merge(LDH_dat, positive.controls, by = "apid")
@@ -158,7 +159,7 @@ calculate_per_total_LDH <- function(dat4, use_half_lysis = T) {
     # LDH_dat[treatment == "Lysis", conc := 10]
     # 
     # # trt, conc, wllt for 1/2 Lysis wells - note the rval's here have not been multiplied by 2
-    # LDH_dat[treatment == "½ Lysis", wllt := "p"]
+    # LDH_dat[treatment == "? Lysis", wllt := "p"]
     # LDH_dat[treatment == "Lysis", conc := 5]
   }
   # (for ToxCast, set the 1 lysis F1 well to "n". Don't need any extra rows)
