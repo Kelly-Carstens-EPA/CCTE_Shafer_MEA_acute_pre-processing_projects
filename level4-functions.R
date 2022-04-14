@@ -54,8 +54,8 @@ assign_wllt <- function(dat4) {
   new_non_treated_compounds <- setdiff(dat4[!grepl(paste0("(",treated_spid_prefixes,")",collapse="|"),spid), unique(spid)], 
                                        c("DMSO","Water","Media","Picrotoxin","Tetrodotoxin", "Tritonx100", "Bicuculline"))
   if (length(new_non_treated_compounds) > 0) {
-    stop(paste0("Wllt is not defined for the following non-treated spids:\n",paste0(new_non_treated_compounds,collapse=", "),
-                "\nEdit the assign_wllt() to add these compounds."))
+    warning(paste0("Wllt is not defined for the following treatment with sample IDs:\n",paste0(new_non_treated_compounds,collapse=", "),
+                "\nWill set wllt:='t' for these compounds."))
   }
   if (dat4[, any(is.na(unique(spid)))]) {
     stop(paste0("Spid is NA for the following treatments:\n",paste0(dat4[is.na(spid), unique(treatment)],collapse=", ")))

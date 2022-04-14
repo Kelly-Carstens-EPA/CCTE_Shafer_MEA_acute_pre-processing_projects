@@ -162,10 +162,17 @@ cat("\nVerifying control compound labels:\n")
 dat4[, .N, by = "treatment"]
 dat4[grepl("DMSO",treatment), treatment := "DMSO"]
 
+# Relabel "½ Lysis" wells to '1/2 Lysis'!!
+# Need standard ascii characters
+# This is the new treatment name that will be recognized
+dat4[treatment == "½ Lysis", treatment := '1/2 Lysis']
+dat4[treatment == "? Lysis", treatment := '1/2 Lysis']
+
+
 # visually confirm if the PICRO, TTX, LYSIS were added before the second recording for MEA endpoints
 # varies across experiments, sometimes across days
 # if not, the PICRO, TTX, LYSIS wells only contained media for the MEA endpoints
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # RESPONSE:
 # yes/no, it appears that the PICRO, TTX, LYSIS were added before the second treatment
@@ -174,7 +181,7 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to reflect this
 
 # for Cell Titer Blue assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # make updates if needed
 # dat4[, AB.trt.finalized := FALSE] # set this to TRUE for individual plates as you update as needed
@@ -184,11 +191,11 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # dat4[AB.trt.finalized == FALSE & grepl("AB",acnm) & treatment == "Media", `:=`(treatment = "Lysis",conc = 10, AB.trt.finalized = TRUE)]
 
 # # view updated stripchart
-# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 # view_activity_stripchart(plotdat, title_additions = "Media renamed to Lysis")
 
 # for LDH assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 
 # looks like media wells really do just contain Media

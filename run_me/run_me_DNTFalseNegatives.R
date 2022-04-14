@@ -4,8 +4,8 @@ rm(list = ls())
 # ----------------------------------------------------------------------- #
 start.dir <- "L:/Lab/NHEERL_MEA/Project - DNT  False Negatives/20210818_False Negatives_Acute"
 dataset_title <- "DNTFalseNegatives" # e.g. "name2020"
-select.neural.stats.files <- T # select new neural stats files, or use the files in the most recent neural_stats_files_log?
-select.calculations.files <- T # select new calculations files, or use the files in the most recent calculations_files_log?
+select.neural.stats.files <- F # select new neural stats files, or use the files in the most recent neural_stats_files_log?
+select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
 run.type.tag.location <- 3 # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
 spidmap_file <- ""
 use_sheet <- "" # sheet name in spidmap_file
@@ -188,7 +188,7 @@ low_mfr_wells <- dat1[run_type == "baseline" & acsn == "Mean Firing Rate (Hz)" &
 dat1[run_type == "baseline" & well %in% low_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR < ",mfr_lower_threshold," Hz; "))]
 
 # For treated, don't assign wllq for treated wells (yet)
-dat1[run_type == "tested", `:=` (wllq = NA_integer_, wllq_notes = "")]
+dat1[run_type == "treated", `:=` (wllq = NA_integer_, wllq_notes = "")]
 
 # for baseline or treated, if recording length is very short or very  long, remove it
 if (standard_analysis_duration_requirement) {
@@ -310,8 +310,8 @@ cat("\nWell quality set to 0 for these rval's.\n")
 # start a pdf to save the summary graphs
 graphics.off()
 pdf(file = file.path(main.output.dir, paste0(dataset_title, "_summary_figures_report_",as.character.Date(Sys.Date()),".pdf")), width = 10, height = 8)
+sink(file = file.path(main.output.dir, paste0(dataset_title, "_run_me_output_",as.character.Date(Sys.Date()),".txt")))
 
-# RESUME HERE - confirm the treatment updates
 
 # * VERIFY TREATMENT LABELS FOR CONTROLS IN NEURAL AND CYTOTOX ASSAYS -----
 
@@ -320,30 +320,37 @@ dat4[, treatment_org := treatment]
 # view and standardize treatment names, so can compare all relevant values below
 dat4[, .N, by = "treatment"]
 dat4[grepl("DMSO",treatment), treatment := "DMSO"]
+dat4[, treatment := sub(' \\(.*$','',treatment)] # removing the compound code
+
+# Relabel "½ Lysis" wells to '1/2 Lysis'!!
+# Need standard ascii characters
+# This is the new treatment name that will be recognized
+dat4[treatment %in% "½ Lysis", treatment := '1/2 Lysis']
+
 
 # visually confirm if the PICRO, TTX, LYSIS were added before the second recording for MEA endpoints
 # varies across experiments, sometimes across days
 # if not, the PICRO, TTX, LYSIS wells only contained media for the MEA endpoints
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # RESPONSE:
 # It appears that the TTX was added before the second treatment
 # but not the PICRO
 
 # Updating treatments
-dat4[treatment == 'PICRO', .N, by = .(plate.id, rowi, coli)]
+dat4[treatment == 'PICRO' & !grepl('(LDH)|(AB)',acnm), .N, by = .(plate.id, rowi, coli)]
 #     plate.id rowi coli  N
-# 1: MW75-9208    4    1 46
-# 2: MW75-9209    4    1 46
-# 3: MW75-9210    4    1 46
-dat4[treatment == 'PICRO', treatment := 'DMSO']
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
-view_activity_stripchart(plotdat, title_additions = "D4 wells changed from PICRO to DMSO")
+# 1: MW75-9208    4    1 44
+# 2: MW75-9209    4    1 44
+# 3: MW75-9210    4    1 44
+dat4[treatment == 'PICRO' & !grepl('(LDH)|(AB)',acnm), treatment := 'DMSO']
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+view_activity_stripchart(plotdat, title_additions = "D1 wells treatment updated from PICRO to DMSO")
 
 # for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to refect this
 
 # for Cell Titer Blue assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 # Well that definitely doesn't look right
 dat4[treatment == 'Media' & grepl('AB',acnm), .N, by = .(plate.id, rowi, coli)]
@@ -351,9 +358,10 @@ dat4[treatment == 'Media' & grepl('AB',acnm), .N, by = .(plate.id, rowi, coli)]
 # 1: MW75-9208    6    1 1
 # 2: MW75-9209    6    1 1
 # 3: MW75-9210    6    1 1
+# The F1 well usually contains Lysis, so I think this should be Lysis.
 dat4[treatment == 'Media' & grepl('AB',acnm), treatment := 'Lysis']
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
-view_activity_stripchart(plotdat, title_additions = "F1 wells chnaged from Media to Lysis")
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+view_activity_stripchart(plotdat, title_additions = "F1 well treatment updated from Media to Lysis")
 # make updates if needed
 # dat4[, AB.trt.finalized := FALSE] # set this to TRUE for individual plates as you update as needed
 # 
@@ -362,11 +370,11 @@ view_activity_stripchart(plotdat, title_additions = "F1 wells chnaged from Media
 # dat4[AB.trt.finalized == FALSE & grepl("AB",acnm) & treatment == "Media", `:=`(treatment = "Lysis",conc = 10, AB.trt.finalized = TRUE)]
 
 # # view updated stripchart
-# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
+# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
 # view_activity_stripchart(plotdat, title_additions = "Media renamed to Lysis")
 
 # for LDH assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","½ Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
+plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","1/2 Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
 view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
 
 # From template, a common scenario: 
@@ -390,15 +398,21 @@ cat("\n")
 
 # * ASSIGN SPIDS ----------------------------------------------------------
 
+# Don't have spids yet, so will just standardize the compound names
+dat4[, .N, by = .(treatment)]
+# looks good
+# will updated some controls below
+dat4[, spid := treatment]
+
 cat("\nAssign spid's:\n")
-cat("Using spidmap file:",spidmap_file,"\n")
-spidmap <- as.data.table(read_excel(spidmap_file, sheet = use_sheet))
-names(spidmap)
-setnames(spidmap, old = "NCCT ID", new = "spid")
-setnames(spidmap, old = "Chemical ID", new = "treatment")
-setdiff(unique(dat4$treatment), unique(spidmap$treatment))
-# [1]   
-dat4 <- merge(x = dat4, y = spidmap[, c("spid", "treatment")], all.x = TRUE, by = "treatment")
+# cat("Using spidmap file:",spidmap_file,"\n")
+# spidmap <- as.data.table(read_excel(spidmap_file, sheet = use_sheet))
+# names(spidmap)
+# setnames(spidmap, old = "NCCT ID", new = "spid")
+# setnames(spidmap, old = "Chemical ID", new = "treatment")
+# setdiff(unique(dat4$treatment), unique(spidmap$treatment))
+# # [1]   
+# dat4 <- merge(x = dat4, y = spidmap[, c("spid", "treatment")], all.x = TRUE, by = "treatment")
 
 # assign spids for the non-registered control compounds, e.g.: "Tritonx100" "Bicuculline"  "DMSO" "PICRO" "TTX" "MEDIA"
 dat4[is.na(spid),unique(treatment)]
@@ -409,6 +423,10 @@ dat4[treatment == "PICRO", spid := "Picrotoxin"]
 dat4[treatment == "TTX", spid := "Tetrodotoxin"]
 dat4[grepl("Lysis",treatment), spid := "Tritonx100"]
 dat4[grepl("Lysis",treatment), unique(conc), by = "treatment"]
+#    treatment      V1
+# 1:     Lysis       0
+# 2:     Lysis   Lysis
+# 3:   1/2 Lysis 1/2 Lysis
 unique(dat4$spid) # confirm no NA spids
 if(any(is.na(unique(dat4$spid)))) {
   stop(paste0("The following treatments don't have a corresponding spid:", dat4[is.na(spid), unique(treatment)]))
@@ -422,12 +440,44 @@ cat("Number of unique spids:",dat4[,length(unique(spid))],"\n")
 # * PREPARE LDH P WELLS  --------------------------------------------------
 # (must verify wllq, treatments first)
 dat4 <- prepare_LDH_p_wells(dat4)
-
+# Prepare LDH 'p' wells (using Lysis or Half Lysis wells):
+#   Treatments assigned to wllt 'p' for each apid:
+#        apid LDH_trts_in_p_wells N
+# 1: 20210831       2 * 1/2 Lysis 9
+# 
+# Summary of median p wells by apid:
+#        apid   pval
+# 1: 20210831 0.7134
+dat4[grepl('LDH',acnm) & wllt != 't', .N, by = .(wllt, spid, treatment)]
+# wllt       spid     treatment N
+# 1:    x Tritonx100         Lysis 9
+# 2:    p Tritonx100 2 * 1/2 Lysis 9
 
 
 # * ASSIGN WLLT -----------------------------------------------------------
 dat4 <- assign_wllt(dat4)
-
+# Assign Wllt:
+#   wllt will be set to 't' for the MEA components for the following spid's:
+# 6-PPD, 6-PPD Quinone, 5,5'-Diphenylhydantoin, Caffeine, Dexamethasone, Maneb
+# wllt will be set to 't' for the cytotoxicity components for the following spid's:
+# 6-PPD, 6-PPD Quinone, 5,5'-Diphenylhydantoin, Caffeine, Dexamethasone, Maneb
+# 
+# Well Type Assignments for Control Compounds by assay component:
+#   treatment         spid CellTiter Blue LDH MEA components
+# 1:          DMSO         DMSO              n   n              n
+# 2:         Media        Media              -   b              b
+# 3:         PICRO   Picrotoxin              z   z              -
+#   4:           TTX Tetrodotoxin              x   x              p
+# 5: 2 * 1/2 Lysis   Tritonx100              -   p              -
+#   6:         Lysis   Tritonx100              p   x              -
+#   
+#   Unique of wllt:
+#   [1] "n" "t" "p" "b" "z" "x"
+# Warning message:
+#   In assign_wllt(dat4) :
+#   Wllt is not defined for the following treatment with sample IDs:
+#   Caffeine, Dexamethasone, Maneb
+# Will set wllt:='t' for these compounds.
 
 
 # * CHECK CONC'S ----------------------------------------------------------
@@ -445,15 +495,16 @@ dat4[treatment == "DMSO", conc := "0.001"]
 
 # picro
 dat4[treatment == "PICRO", .N, by = "conc"]
-# empty
-# based on lab notebook, this is usually 25
-# dat4[treatment == "PICRO", conc := "25"]
+#    conc N
+# 1:    1 6
+# based on every other lab notebook, this should be 25
+dat4[treatment == "PICRO", conc := "25"]
 
 # ttx
 dat4[treatment == "TTX", .N, by = "conc"]
 #    conc   N
 # 1:   25 138
-# based on other lab notebook, this is usually 1
+# based on other lab notebooks, this is usually 1
 dat4[treatment == "TTX", conc := "1"]
 
 cat("\nConcentration Corrections:\n")
@@ -472,14 +523,41 @@ cat("CHANGES MADE/rationale")
 # dat4[, conc := suppressWarnings(as.numeric(conc))]
 
 # final updates, view conc's, make table of control conc's
-dat4 <- assign_common_conc(dat4)
+dat4 <- assign_common_conc(dat4, check_conc_correction = FALSE)
+# All conc's as char:
+# NA, 0.001, 0.03, 0.1, 0.26699999999999996, 0.3, 0.8899999999999999, 1, 10, 100, 1000, 2.6699999999999995E-2, 2.6699999999999996E-3, 2.67, 25, 3, 30, 300, 8.8999999999999982E-2, 8.8999999999999982E-3, 9.9999999999999985E-3
+# All conc's as numeric:
+#   NA, 0.001, 0.00267, 0.0089, 0.01, 0.0267, 0.03, 0.089, 0.1, 0.267, 0.3, 0.89, 1, 2.67, 3, 10, 25, 30, 100, 300, 1000
+# 
+# Final Control Compound Conc Assignments by assay component:
+#   treatment         spid Conc Label in Source File CellTiter Blue   LDH MEA components
+# 1:          DMSO         DMSO                 Control,1          0.001 0.001          0.001
+# 2:         Media        Media                         0              -    NA             NA
+# 3:         PICRO   Picrotoxin                         1             25    25              -
+# 4:           TTX Tetrodotoxin                        25              1     1              1
+# 5: 2 * 1/2 Lysis   Tritonx100                   ½ Lysis              -    NA              -
+# 6:         Lysis   Tritonx100                   0,Lysis             NA    NA              -
+
+# Since I'm not doing conc-correction, just want to just unique conc's per treatment
+dat4[wllt == 't', .N, by = .(treatment, conc)][order(treatment, conc)]
+# 7 conc's per treatment, cool
+
+
+# * Convert ug/mL to uM ---------------------------------------------------
+
+dat4[wllt == 'n', conc_unit := 'fraction']
+dat4[wllt != 'n' & spid != '6-PPD Quinone', conc_unit := 'uM'] # default for non-solvent control wells
+dat4[spid == '6-PPD Quinone', conc_unit := 'ug/mL'] # conc in "Waste" sheet is in mg/mL. When actually dosed, top conc is ug/mL (1000X dilution, just as for all other trts)
+dat4[spid == '6-PPD Quinone', mol_weight_g_per_mol := 298.38] # see notebook, got this value from Kathleen.
+dat4[conc_unit == 'uM', conc_in_uM := conc]
+dat4[conc_unit == 'ug/mL', conc_in_uM := conc*1000/mol_weight_g_per_mol]
+
 
 
 # * ASSIGN ACID -----------------------------------------------------------
 cat("\nAssign ACId:\n")
 cat("(not doing this for now, since new acnm's need to be registered)\n")
 # dat4 <- add_acid(dat4) # holding off, need to register new acid's
-
 
 
 # Final checks and save ---------------------------------------------------
@@ -496,6 +574,7 @@ cat("(note that the wllq is not quite final -\nwllq will be updated for outlier 
 
 # Check for the expected number of technical replicates
 dat4[wllt == 't', .(length(unique(paste0(apid,rowi,coli)))), by = .(spid, conc)][V1 != 3]
+# empty
 # do you except these cases to have more than or less than 3 replicates?
 # Were some samples repeated, and only certain repeats meant to be included?
 
@@ -503,5 +582,6 @@ dat4[wllt == 't', .(length(unique(paste0(apid,rowi,coli)))), by = .(spid, conc)]
 dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3)]
 save(dat4, file = file.path(main.output.dir, paste0("output/",dataset_title,"_dat4_",as.character.Date(Sys.Date()),".RData")))
 cat("\ndat4 saved on:",as.character.Date(Sys.Date()), "\n")
+closeAllConnections()
 
 # you're done!
