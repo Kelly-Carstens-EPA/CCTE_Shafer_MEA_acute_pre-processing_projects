@@ -260,7 +260,7 @@ dat4 <- assign_wllt(dat4)
 
 # * CHECK CONC'S ----------------------------------------------------------
 cat("\nFinalize Concentrations:\n")
-dat4[, conc_original := conc]
+dat4[, conc_srcf := conc]
 dat4[, unique(conc)] # any NA's? any non-numeric? Any 0? does it look like conc correction was done?
 
 # update conc for DMSO, PICRO, TTX, BIC, and full Lysis wells
@@ -315,7 +315,7 @@ createWllqSummary(dat4, dataset_title)
 cat("(note that the wllq is not quite final -\nwllq will be updated for outlier DMSO wells will before creating lvl 0 snapshot)\n")
 
 # save dat4
-dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3)]
+dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3, conc_srcf)]
 save(dat4, file = file.path(main.output.dir, paste0("output/",dataset_title,"_dat4_",as.character.Date(Sys.Date()),".RData")))
 cat("\ndat4 saved on:",as.character.Date(Sys.Date()), "\n")
 

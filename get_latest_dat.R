@@ -32,10 +32,6 @@ get_latest_dat <- function(lvl = "dat4", dataset_titles = NULL,
   }
   assign("RData_files_used",RData_files_used,envir = parent.frame())
   
-  if (length(dataset_titles) == 1) {
-    dat[, origin := NULL]
-  }
-  
   return(dat)
 
 }

@@ -560,6 +560,47 @@ cat("(not doing this for now, since new acnm's need to be registered)\n")
 # dat4 <- add_acid(dat4) # holding off, need to register new acid's
 
 
+
+# * Update wllq_notes for precipitate -------------------------------------
+
+load('../../pre-process_hci_for_tcpl/projects/output_data/DNTFalseNegatives_data.RData')
+hci.dat[grepl('precipitate',wllq_notes), unique(wllq_notes)]
+# [1] "neuron count low, group was repeated; Compound observered to precipitate out of solution at this conc in cortical synap 20220112"        
+# [2] "neuron count low, group was repeated; Compound observered to precipitate out of solution at this conc"                                   
+# [3] "NA; Compound observered to precipitate out of solution at this conc in cortical synap 20220112"                                          
+# [4] "well quality set to 0 in xlsx plate map file; Compound observered to precipitate out of solution at this conc in cortical synap 20220112"
+# There was 1 assay that was atypical. I'm going to go with just the precipitate notes from cortical synap 20220112
+precipitate.observations.tb <- hci.dat[grepl('Compound observered to precipitate out of solution at this conc in cortical synap 20220112',wllq_notes),
+                                       .(min_conc_precipitate_observed = min(conc_in_uM, na.rm = T)), by = .(spid)]
+precipitate.observations.tb
+#                     spid min_conc_precipitate_observed
+# 1:                 6-PPD                      9.000000
+# 2:         6-PPD Quinone                      2.664388
+# 3: 5,5-Diphenylhydantoin                    1000.000000
+
+# Confirm the pseudo-spid names from hci match the acute
+setdiff(precipitate.observations.tb$spid, dat4$spid) # "5,5-Diphenylhydantoin"
+dat4[grepl('Diphenyl',spid), unique(spid)] # "5,5'-Diphenylhydantoin"
+# oh, the apostrophe is not present in the HCI name.
+precipitate.observations.tb[spid == '5,5-Diphenylhydantoin', spid := "5,5'-Diphenylhydantoin"] 
+setdiff(precipitate.observations.tb$spid, dat4$spid) # "empty
+
+# Apply to dat4
+dat4 <- merge(dat4, precipitate.observations.tb, by = c('spid'), all.x = T)
+dat4[conc_in_uM >= min_conc_precipitate_observed, .N, by = .(spid, conc_in_uM)]
+#                     spid  conc_in_uM   N
+# 1: 5,5'-Diphenylhydantoin 1000.000000 138
+# 2:                  6-PPD   10.000000 138
+# 3:                  6-PPD   30.000000 138
+# 4:          6-PPD Quinone    2.982774 138
+# 5:          6-PPD Quinone    8.948321 138
+dat4[conc_in_uM >= min_conc_precipitate_observed, wllq_notes := paste0(wllq_notes, '; Compound observered to precipitate out of solution at this conc in cortical synap 20220112')]
+dat4[grepl('precipitate',wllq_notes), .N, by = .(spid, conc_in_uM)]
+# looks good!!
+dat4[, min_conc_precipitate_observed := NULL]
+rm(hci.dat)
+
+
 # Final checks and save ---------------------------------------------------
 
 # check that all data is there, nothing is missing, view plots
@@ -579,7 +620,9 @@ dat4[wllt == 't', .(length(unique(paste0(apid,rowi,coli)))), by = .(spid, conc)]
 # Were some samples repeated, and only certain repeats meant to be included?
 
 # save dat4
-dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3)]
+dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3, 
+                 conc_unit, mol_weight_g_per_mol, conc_in_uM # addl columns
+                 )]
 save(dat4, file = file.path(main.output.dir, paste0("output/",dataset_title,"_dat4_",as.character.Date(Sys.Date()),".RData")))
 cat("\ndat4 saved on:",as.character.Date(Sys.Date()), "\n")
 closeAllConnections()
