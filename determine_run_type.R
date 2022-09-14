@@ -51,8 +51,33 @@ determine_run_type <- function(dat1) {
   dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
        original_file_time_posix := as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))]
   dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
-       experiment_start_time_posix := as.POSIXlt('05/13/2021 12:33:00', format = c('%M/%d/%Y %H:%M:%OS'))]
+       experiment_start_time_posix := as.POSIXlt('05/13/2021 12:33:00', format = c('%M/%d/%Y %H:%M:%OS'))]]
+
+  # What would be the alternative here?
+# Could I have something of a switch/multiple tries?
+
+# Or i coudl add on seconds if they are missing?
+# OR, I coudl just ignore the seconds, since that doesn't really matter?
+
+as.POSIXlt('11/17/2020 11:37:54', format = c('%m/%d/%Y %H:%M'))
+# yeah, it just adds 00 for the seconds!
+as.POSIXlt('5/13/2021 12:33', format = c('%m/%d/%Y %H:%M'))
+
+
+as.POSIXlt('05', format = c('%m'))
+as.POSIXlt('5', format = c('%m'))
+
+
+# OR, is the AM/PM a critical piece of lost information?
+
+# how about it AM/PM is included in the text, then I will use that for determining the time
+# else I will assume 24 hour time
+# BUT, it seems like teh AM/PM may have been scrubbed?
+dat1[grepl('AC_20210428_MW75-8205_15',srcf), .N, by = .(srcf, original_file_time, analysis_start)]
   
+# So at what step woudl the AM/PM have gotten scrubbed?
+# Is it possibel that R did some automatic conversion to a 24-hour time?
+# What I do, def need to make this not prone to change if R ever changes its underlying methods!!
   
   # Determine the run type based on 3 other methods -> these methods are likely more reliable, but will compare them all
   dat1[, file_exp_start_time_rank := frank(experiment_start_time_posix, ties.method = 'dense'), by = .(experiment.date, plate.id)]
