@@ -1,0 +1,24 @@
+HESIConvulsant2018b files used for MEA acute pre-processing for TCPL
+File types: neural_stats
+Created with the script gather_files-functions.R
+Date ran: 2021-04-28 13:02:33
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 12 files from 2 directories.
+
+L:/Lab/NHEERL_MEA/Project - HESI Convulsant/Cortical Neurons/20180314 Cortical Culture/Neural Statistics
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180314 Cortical Culture\Neural Statistics\HESI_20180314_MW1207-15_12_00(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180314 Cortical Culture\Neural Statistics\HESI_20180314_MW1207-15_12_02(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180314 Cortical Culture\Neural Statistics\HESI_20180314_MW1207-16_12_00(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180314 Cortical Culture\Neural Statistics\HESI_20180314_MW1207-16_12_02(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180314 Cortical Culture\Neural Statistics\HESI_20180314_MW1207-17_12_00(001)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180314 Cortical Culture\Neural Statistics\HESI_20180314_MW1207-17_12_02(000)_Neural Statistics Compiler(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project - HESI Convulsant/Cortical Neurons/20180322 Cortical Culture/Stats
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180322 Cortical Culture\Stats\HS_Cortical_20180322_MW1207-18_12_00(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180322 Cortical Culture\Stats\HS_Cortical_20180322_MW1207-18_12_02(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180322 Cortical Culture\Stats\HS_Cortical_20180322_MW1207-19_12_00(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180322 Cortical Culture\Stats\HS_Cortical_20180322_MW1207-19_12_02(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180322 Cortical Culture\Stats\HS_Cortical_20180322_MW1207-20_12_00(000)_Neural Statistics Compiler(000).csv
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180322 Cortical Culture\Stats\HS_Cortical_20180322_MW1207-20_12_02(000)_Neural Statistics Compiler(000).csv

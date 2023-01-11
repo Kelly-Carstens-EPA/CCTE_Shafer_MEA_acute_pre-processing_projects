@@ -1,0 +1,87 @@
+TSCA2019 files used for MEA acute pre-processing for TCPL
+File types: neural_stats
+Created with the script gather_files-functions.R
+Date ran: 2020-11-16 16:43:29
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 54 files from 9 directories.
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191023 Culture/Set 1/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 1\Neural Statistic Compiler\AC_20191023_MW70-2419_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 1\Neural Statistic Compiler\AC_20191023_MW70-2419_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 1\Neural Statistic Compiler\AC_20191023_MW70-2420_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 1\Neural Statistic Compiler\AC_20191023_MW70-2420_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 1\Neural Statistic Compiler\AC_20191023_MW70-2501_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 1\Neural Statistic Compiler\AC_20191023_MW70-2501_13_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191023 Culture/Set 2/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 2\Neural Statistic Compiler\AC_20191023_MW70-2502_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 2\Neural Statistic Compiler\AC_20191023_MW70-2502_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 2\Neural Statistic Compiler\AC_20191023_MW70-2503_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 2\Neural Statistic Compiler\AC_20191023_MW70-2503_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 2\Neural Statistic Compiler\AC_20191023_MW70-2504_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 2\Neural Statistic Compiler\AC_20191023_MW70-2504_15_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191106 Culture/Set 3/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 3\Neural Statistic Compiler\AC_20191106_MW70-2511_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 3\Neural Statistic Compiler\AC_20191106_MW70-2511_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 3\Neural Statistic Compiler\AC_20191106_MW70-2512_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 3\Neural Statistic Compiler\AC_20191106_MW70-2512_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 3\Neural Statistic Compiler\AC_20191106_MW70-2513_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 3\Neural Statistic Compiler\AC_20191106_MW70-2513_13_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191106 Culture/Set 4/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 4\Neural Statistic Compiler\AC_20191106_MW70-2514_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 4\Neural Statistic Compiler\AC_20191106_MW70-2514_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 4\Neural Statistic Compiler\AC_20191106_MW70-2515_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 4\Neural Statistic Compiler\AC_20191106_MW70-2515_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 4\Neural Statistic Compiler\AC_20191106_MW70-2516_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 4\Neural Statistic Compiler\AC_20191106_MW70-2516_15_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191120 Culture/Set 5/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 5\Neural Statistic Compiler\AC_20191120_MW70-2603_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 5\Neural Statistic Compiler\AC_20191120_MW70-2603_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 5\Neural Statistic Compiler\AC_20191120_MW70-2604_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 5\Neural Statistic Compiler\AC_20191120_MW70-2604_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 5\Neural Statistic Compiler\AC_20191120_MW70-2605_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 5\Neural Statistic Compiler\AC_20191120_MW70-2605_13_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191120 Culture/Set 6/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 6\Neural Statistic Compiler\AC_20191120_MW70-2606_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 6\Neural Statistic Compiler\AC_20191120_MW70-2606_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 6\Neural Statistic Compiler\AC_20191120_MW70-2607_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 6\Neural Statistic Compiler\AC_20191120_MW70-2607_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 6\Neural Statistic Compiler\AC_20191120_MW70-2608_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 6\Neural Statistic Compiler\AC_20191120_MW70-2608_15_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191204 Culture/Set 7/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 7\Neural Statistic Compiler\AC_20191204_MW70-2609_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 7\Neural Statistic Compiler\AC_20191204_MW70-2609_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 7\Neural Statistic Compiler\AC_20191204_MW70-2610_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 7\Neural Statistic Compiler\AC_20191204_MW70-2610_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 7\Neural Statistic Compiler\AC_20191204_MW70-2611_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 7\Neural Statistic Compiler\AC_20191204_MW70-2611_13_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191204 Culture/Set 8/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 8\Neural Statistic Compiler\AC_20191204_MW70-2612_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 8\Neural Statistic Compiler\AC_20191204_MW70-2612_15_00(002)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 8\Neural Statistic Compiler\AC_20191204_MW70-2613_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 8\Neural Statistic Compiler\AC_20191204_MW70-2613_15_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 8\Neural Statistic Compiler\AC_20191204_MW70-2614_15_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 8\Neural Statistic Compiler\AC_20191204_MW70-2614_15_00(001)(000).csv
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20201021 Culture/Neural Statistic Compiler
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20201021 Culture\Neural Statistic Compiler\AC_20201021_MW71-7101_13_00(000)(002).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20201021 Culture\Neural Statistic Compiler\AC_20201021_MW71-7101_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20201021 Culture\Neural Statistic Compiler\AC_20201021_MW71-7102_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20201021 Culture\Neural Statistic Compiler\AC_20201021_MW71-7102_13_00(002)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20201021 Culture\Neural Statistic Compiler\AC_20201021_MW71-7103_13_00(001)(000).csv
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20201021 Culture\Neural Statistic Compiler\AC_20201021_MW71-7103_13_00(002)(000).csv

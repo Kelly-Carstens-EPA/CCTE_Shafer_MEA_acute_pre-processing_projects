@@ -1,0 +1,14 @@
+HESIConvulsant2018a files used for MEA acute pre-processing for TCPL
+File types: calculations
+Created with the script gather_files-functions.R
+Date ran: 2021-04-26 09:10:07
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 2 files from 2 directories.
+
+L:/Lab/NHEERL_MEA/Project - HESI Convulsant/Cortical Neurons/20180314 Cortical Culture
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180314 Cortical Culture\20180314 Culture Group 1 HESI.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - HESI Convulsant/Cortical Neurons/20180322 Cortical Culture
+L:\Lab\NHEERL_MEA\Project - HESI Convulsant\Cortical Neurons\20180322 Cortical Culture\Group 2 HESI Calculations Cortical 20180322.xlsx

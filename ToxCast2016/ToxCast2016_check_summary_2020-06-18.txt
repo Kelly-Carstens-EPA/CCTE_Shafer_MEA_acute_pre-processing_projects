@@ -1,0 +1,12 @@
+Created with the script check-functions.R, writeCheckSummary() on 2020-06-18
+Reading from ToxCast2016_neural_stats_files_log_2020-06-18.txt...
+Got 414 files.
+
+Neural Statistics Compiler Parameters Summary:
+There are 0 files with parameter data missing:
+
+
+
+Neural Statistics Compiler Timing Summary:
+There are 1 files with analysis duration above or below the threshold:
+TC_MW 1076-38_20160303_20160317_14_01(001)_Neural Statistics Compiler(000).csv analysis duration is 544.25s

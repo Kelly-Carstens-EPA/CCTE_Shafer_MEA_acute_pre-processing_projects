@@ -1,0 +1,12 @@
+Created with the script check-functions.R, writeCheckSummary() on 2020-07-21
+Reading from GF2019_neural_stats_files_log_2020-06-21.txt...
+Got 6 files.
+
+Neural Statistics Compiler Parameters Summary:
+There are 0 files with parameter data missing:
+
+
+
+Neural Statistics Compiler Timing Summary:
+There are 0 files with analysis duration above or below the threshold:
+

@@ -1,0 +1,323 @@
+---
+title: "MEA Acute Impact of Analysis Start and Duration"
+author: Amy Carpenter
+date: September 13, 2021
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    df_print: paged
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(stringi)
+library(ggplot2)
+scripts <- list.files(path = "../mea-acute-neural-stats-to-mc0-scripts", pattern = "\\.R$", full.names = T, recursive = F)
+sapply(scripts, source)
+```
+
+# ASSUMPTIONS
+- I didn't add the plate maps to the TSCA data yet. So I am assuming that all of the DMSO controls are in wells A1, B1, and C1. If that is not true for any of these plates, then I may be misidentifying some controls<br>
+- I'm assuming that the cndx corresponds linearly with teh column. In other words, when I calculate bval for each apid, I am using the 'n' wells plus all wells in columns 2 and 3 (bc I'm assuming these are cndx 1 & 2)<br>
+
+# Load data, Prepare % of Baseline Values
+
+```{r}
+dat1 <- get_latest_dat(lvl = "dat1", dataset_title = 'TimeComparison')
+
+# I'm going to make my own 'dat2', because I don't want to deal with configuring fun below for multiple test files
+baseline.dat <- dat1[run_type == 'baseline', .(acsn, well, activity_value, plate.id, experiment.date, apid, coli, rowi, srcf, wllq, wllq_notes, acnm)]
+dat2 <- merge(dat1, baseline.dat, by = c('acsn','well','plate.id','experiment.date','apid','rowi','coli','acnm'), suffixes = c('.trt','.bas'), all = T)
+# nrow(dat1) == nrow(dat2) # TRUE
+# dat2[, .N, by = .(wllq.trt, wllq.bas)]
+# wllq.trt wllq.bas      N
+# 1:        1        1  30052
+# 2:       NA        1 150260
+# 3:        0        0   7964
+# 4:       NA        0  39820
+dat2[, wllq := wllq.bas]
+# dat2[, .N, by = .(activity_value.bas < 0)]
+# activity_value.bas      N
+# 1:              FALSE 222156
+# 2:                 NA   5940
+# all positive, good
+dat2[, rval := ( (activity_value.trt - activity_value.bas) / activity_value.bas ) * 100]
+rm(dat1)
+rm(baseline.dat)
+
+dat2[, time.len := as.numeric(stri_extract_first(sub('\\.csv','',srcf.trt), regex = '[0-9]{1,}$'))]
+# dat2[, .N, by = .(analysis_duration, time.len)][order(time.len)]
+#    analysis_duration time.len     N
+# 1:            899.75       15 25344
+# 2:            900.00       15 12672
+# 3:           1199.75       20 25344
+# 4:           1200.00       20 12672
+# 5:           1499.75       25 25344
+# 6:           1500.00       25 12672
+# 7:           1799.75       30 25344
+# 8:           1800.00       30 12672
+# 9:           2399.75       40 29568
+# 10:           2400.00       40 14784
+# 11:           2399.50       40 31680
+# Looks good!
+# (analysis duration is in sec)
+
+# I want an x-value that increases as time from baseline recording increases...
+dat2[, time_from_baseline := 20 + (40 - as.numeric(time.len))]
+# dat2[, .N, by = .(time.len, time_from_baseline)][order(time.len)]
+#    time.len time_from_baseline     N
+# 1:       15                 45 38016
+# 2:       20                 40 38016
+# 3:       25                 35 38016
+# 4:       30                 30 38016
+# 5:       40                 20 76032
+
+# for the moment, I'm assuming that all controls are in the upper corner as usual
+dat2[rowi %in% c(1:3) & coli == 1, wllt_guess := 'n']
+dat2[rowi %in% c(4:5) & coli == 1, wllt_guess := 'p']
+dat2[rowi %in% c(6) & coli == 1, wllt_guess := 'b']
+dat2[, well.id := paste0(plate.id,' ',well)]
+
+
+```
+
+# Check out an example plate
+```{r}
+plotdat <- dat2[run_type == 'treated' & wllt_guess == 'n' & experiment.date == '20210408' & grepl('firing_rate_mean$',acnm)]
+
+ggplot(plotdat, aes(x = time.len, y = rval)) +
+  geom_hline(yintercept = 0)+
+  geom_line(aes(color = factor(well.id)))+
+  geom_point(aes(color = factor(well.id)), size = 2)+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle('MFR vs minutes from end of recording used\nDMSO Controls from Experiment Date 20210408')
+
+```
+<br>In this experiment date and endpoint, it doesn't look like the time from baseline improves the % change at all...
+
+
+# See all TSCA 2019 plates for MFR, wMFR, and nAE
+## All points individually {.tabset}
+### Mean Firing Rate
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_firing_rate_mean'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi]
+ggplot(plotdat, aes(x = time.len, y = rval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nDMSO Controls'))
+```
+<br>Two thoughts:<br>
+- The Median rval does not seem to vary significantly by time<br>
+- the distributions are kind of terrible! Ranging from IQR from -50 to 0 for most!<br>
+
+### Weighted Mean Firing Rate
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_firing_rate_mean_weighted'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi]
+ggplot(plotdat, aes(x = time.len, y = rval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nDMSO Controls'))
+```
+
+### nAE
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_active_electrodes_number'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi]
+ggplot(plotdat, aes(x = time.len, y = rval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nDMSO Controls'))
+```
+
+### Burst Number
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_burst_number'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi]
+ggplot(plotdat, aes(x = time.len, y = rval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nDMSO Controls'))
+```
+
+## Plate Medians {.tabset}
+### Mean Firing Rate
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_firing_rate_mean'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi, .(bval = median(rval, na.rm = T)), by = .(experiment.date, plate.id, time.len)]
+ggplot(plotdat, aes(x = time.len, y = bval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nPlatewise Median of DMSO Controls'))
+```
+
+
+### Weighted Mean Firing Rate
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_firing_rate_mean_weighted'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi, .(bval = median(rval, na.rm = T)), by = .(experiment.date, plate.id, time.len)]
+ggplot(plotdat, aes(x = time.len, y = bval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  geom_hline(yintercept = 0)+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nPlatewise Median of DMSO Controls'))
+```
+
+### Burst Number
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_burst_number'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi, .(bval = median(rval, na.rm = T)), by = .(experiment.date, plate.id, time.len)]
+ggplot(plotdat, aes(x = time.len, y = bval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  geom_hline(yintercept = 0)+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nPlatewise Median of DMSO Controls'))
+```
+
+### Network Burst Number
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_network_burst_number'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi, .(bval = median(rval, na.rm = T)), by = .(experiment.date, plate.id, time.len)]
+ggplot(plotdat, aes(x = time.len, y = bval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  geom_hline(yintercept = 0)+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nPlatewise Median of DMSO Controls'))
+```
+
+
+
+# See all plates for MFR, after normalization
+```{r}
+dat2[, cndx_guess := as.numeric(coli) - 1]
+dat2[, bval := median(rval[wllq == 1 & (wllt_guess == 'n' | (wllt_guess == 't' & cndx_guess %in% c(1,2)))], na.rm = T), by = .(acsn, acnm, apid, time.len)]
+dat2[, resp := (rval - bval)/(-100 - bval)*100]
+
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & (wllt_guess == 'n' | (wllt_guess == 't' & cndx_guess %in% c(1,2))) & grepl('firing_rate_mean$',acnm)]
+ggplot(plotdat, aes(x = time.len, y = resp)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+
+  xlab('minutes used from end of recording')+
+  ggtitle('MFR (normalized to plate median of controls) vs minutes from end of recording used\nDMSO Controls')
+
+```
+<br>I'm really not sure what is going on here -> why is resp in wells from 40 min recording so up-shifted..?
+I'm not sure how to interpret.
+
+
+# What if i look at the actual bval?
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_firing_rate_mean'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & wllt_guess == 'n' & acnm == acnmi, .(bval = unique(bval)), by = .(experiment.date, plate.id, time.len)]
+ggplot(plotdat, aes(x = time.len, y = bval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nPlatewise Median of DMSO Controls'))
+```
+Interesting... why is the 40min so much less variable, and closer to 0?
+Could this mean that there is more differentiation between DMSO and 2low using the latter time points?
+
+```{r}
+acnmi <- 'CCTE_Shafer_MEA_acute_firing_rate_mean'
+plotdat <- dat2[wllq == 1 & run_type == 'treated' & (wllt_guess == 'n' | (wllt_guess == 't' & cndx_guess %in% c(1:2))) & acnm == acnmi, .(experiment.date, plate.id, time.len, rval, wllt_guess, cndx_guess)]
+ggplot(plotdat, aes(x = time.len, y = bval)) +
+  geom_jitter(pch = 1, height = 0, width = 0.4)+
+  geom_boxplot(aes(group = time.len), outlier.shape = NA, bg = 'transparent')+
+  scale_x_reverse()+ ylab('% baseline')+
+  xlab('minutes used from end of recording')+
+  ggtitle(paste0(acnmi,' vs minutes from end of recording used\nPlatewise Median of DMSO Controls'))
+```
+
+
+# Check our variability over time
+## Scale x-axis by actual date
+```{r}
+load('L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl/lvl0_snapshots/dat4_2020-07-29.RData')
+plotdat <- rbind(dat4[wllq == 1 & wllt == 'n' & grepl('firing_rate_mean$',acnm)],
+                 dat2[wllq == 1 & run_type == 'treated' & time.len == 40 & wllt_guess == 'n' & grepl('firing_rate_mean$',acnm), .(plate.id, apid, rowi, coli, acnm, wllt = wllt_guess, wllq, srcf = srcf.trt, rval)], fill = T)
+plotdat[, apid_date := as.Date(apid, format = '%Y%m%d')]
+ggplot(plotdat, aes(x = apid_date, y = rval)) +
+  geom_point(pch = 1)+
+  scale_x_date(date_breaks = '6 month', date_labels = '%Y-%m')+
+  xlab('experiment date')+
+  ylab('% of baseline')+
+  ggtitle('MFR vs Experiment Date in DMSO Controls\n2021 experiments using full 40 min')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+<br>Takeaways:<br>
+- Variability and down-shifting has alwasy been a problem<br>
+- It seems that there was a heavy bout of down-shifted controls early in 2019<br>
+- 2021 seems really all over the place -> less down shifted, but highly variable<br>
+
+Question: How many plates per apid (experiment date?)
+```{r}
+plotdat[, .(length(unique(plate.id))), by = .(apid, apid_date)][, summary(V1)]
+plotdat[is.na(plate.id), .N] # 0
+ggplot(plotdat[, .(length(unique(plate.id))), by = .(apid, apid_date)], aes(x = apid_date, y = V1))+
+  geom_point()+
+  ylab('Number of plates per experiment date (apid = experiment date)')
+
+```
+
+
+## Scale x-axis by actual date, use last 15 min only
+```{r}
+plotdat <- rbind(mea_acute_lvl0[wllq == 1 & wllt == 'n' & grepl('firing_rate_mean$',acnm)],
+                   dat2[wllq == 1 & run_type == 'treated' & time.len == 15 & wllt_guess == 'n' & grepl('firing_rate_mean$',acnm), .(apid, rowi, coli, acnm, wllt = wllt_guess, wllq, srcf = srcf.trt, rval)], fill = T)
+plotdat[, apid_date := as.Date(apid, format = '%Y%m%d')]
+ggplot(plotdat, aes(x = apid_date, y = rval)) +
+  geom_point(pch = 1)+
+  scale_x_date(date_breaks = '6 month', date_labels = '%Y-%m')+
+  xlab('experiment date')+
+  ylab('% of baseline')+
+  ggtitle('MFR vs Experiment Date in DMSO Controls\n2021 experiments using last 15 min only')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+yep, same, as expected
+
+
+## Same thing, Scale x-axis by apid as factor
+```{r out.width="150%"}
+# max(plotdat$apid[plotdat$apid < 20190201]) # "20160714"
+# max(plotdat$apid[plotdat$apid < 20210201]) # 20191008
+# which(sort(unique(plotdat$apid)) %in% c(20160714,20191008)) # 68 97
+ggplot(plotdat, aes(x = apid, y = rval)) +
+  geom_point(pch = 1)+
+  xlab('experiment date')+
+  ylab('% of baseline')+
+  geom_vline(xintercept = c(68,97)+0.5)+
+  ggtitle('MFR vs Experiment Date in DMSO Controls')+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+
+```
+
+
+# Next Steps
+- interpretation of normalization/did I do it correctly?<br>
+- Check out the situation for all other endpoints -> does it look like time of recording could make a difference?<br>

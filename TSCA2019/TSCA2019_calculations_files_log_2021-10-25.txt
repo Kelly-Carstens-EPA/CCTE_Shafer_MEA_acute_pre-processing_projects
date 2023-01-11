@@ -1,0 +1,154 @@
+TSCA2019 files used for MEA acute pre-processing for TCPL
+File types: calculations
+Created with the script gather_files-functions.R
+Date ran: 2021-10-25 23:15:02
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 37 files from 37 directories.
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201104 Culture G1
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201104 Culture G1/20201104_Calculations_TSCA_G1.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201125 Culture G2
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201125 Culture G2/20201125_Calculations_TSCA_G2.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201125 Culture G3
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201125 Culture G3/20201125_Calculations_TSCA_G3.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201202 Culture G4
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201202 Culture G4/20201202_Calculations_TSCA_G4.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201202 Culture G5
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20201202 Culture G5/20201202_Calculations_TSCA_G5.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210120 Culture G6 (198F11 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210120 Culture G6 (198F11 may need repeat)/20210120_Calculations_TSCA_G6.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210120 Culture G7
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210120 Culture G7/20210120_Calculations_TSCA_G7.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210210 Culture G8
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210210 Culture G8/20210210_Calculations_TSCA_G8.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210210 Culture G9(may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210210 Culture G9(may need repeat)/20210210_Calculations_TSCA_G9.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210224 Culture G10
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210224 Culture G10/20210224_Calculations_TSCA_G10.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210224 Culture G11
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210224 Culture G11/20210221_Calculations_TSCA_G11.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210310 Culture G12 (all but 199B10 need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210310 Culture G12 (all but 199B10 need repeat)/20210310_Calculations_TSCA_G12.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210310 Culture G13
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210310 Culture G13/20210310_Calculations_TSCA_G13.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210324 Culture G14 (199E02 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210324 Culture G14 (199E02 may need repeat)/20210324_Calculations_TSCA_G14.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210324 Culture G15 (199E08, 199E09, 199E10 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210324 Culture G15 (199E08, 199E09, 199E10 may need repeat)/20210324_Calculations_TSCA_G15.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210407 Culture G16
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210407 Culture G16/20210407_Calculations_TSCA_G16.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210407 Culture G17 (199G10, 199G11 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210407 Culture G17 (199G10, 199G11 may need repeat)/20210407_Calculations_TSCA_G17.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210414 Culture G18 (199H09, 199H12 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210414 Culture G18 (199H09, 199H12 may need repeat)/20210414_Calculations_TSCA_G18.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210414 Culture G19 (200A08 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210414 Culture G19 (200A08 may need repeat)/20210414_Calculations_TSCA_G19.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210428 Culture G20
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210428 Culture G20/20210428_Calculations_TSCA_G20.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210428 Culture G21
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210428 Culture G21/20210428_Calculations_TSCA_G21.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210505 Culture G22 (200D12, 200E02 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210505 Culture G22 (200D12, 200E02 may need repeat)/20210505_Calculations_TSCA_G22.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210505 Culture G23 (200F01 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210505 Culture G23 (200F01 may need repeat)/20210505_Calculations_TSCA_G23.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210512 Culture G24 (200H02 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210512 Culture G24 (200H02 may need repeat)/20210512_Calculations_TSCA_G24.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210512 Culture G25
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210512 Culture G25/20210512_Calculations_TSCA_G25.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210526 Culture G26 (201B07, 201C02, 201C03 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210526 Culture G26 (201B07, 201C02, 201C03 may need repeat)/20210526_Calculations_TSCA_G26.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210526 Culture G27 (201D02 may need repeat)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210526 Culture G27 (201D02 may need repeat)/20210526_Calculations_TSCA_G27.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210602 Culture G28 (201E01, 201F04, 201F05)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210602 Culture G28 (201E01, 201F04, 201F05)/20210602_Calculations_TSCA_G28.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210602 Culture G29
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210602 Culture G29/20210602_Calculations_TSCA_G29.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210609 Culture G30 (Repeat all)
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210609 Culture G30 (Repeat all)/20210609_Calculations_TSCA_G30.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210630 Culture G31
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210630 Culture G31/20210630_Calculations_TSCA_G31.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210630 Culture G32
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210630 Culture G32/20210630_Calculations_TSCA_G32.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210707 Culture G33
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210707 Culture G33/20210707_Calculations_TSCA_G33.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210707 Culture G34
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210707 Culture G34/20210707_Calculations_TSCA_G34.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210714 Culture G35
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210714 Culture G35/20210714_Calculations_TSCA_G35.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210811 Culture G36
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210811 Culture G36/20210811_Calculations_TSCA_G36.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210811 Culture G37
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210811 Culture G37/20210811_Calculations_TSCA_G37.xlsx

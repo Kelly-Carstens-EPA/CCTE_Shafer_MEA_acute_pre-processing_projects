@@ -1,0 +1,90 @@
+
+Verifying control compound labels:
+Confirm that the rest of these treatments look normal (nothing NA, 0, etc):
+DMSO, 6-PPD, 6-PPD Quinone, 5,5'-Diphenylhydantoin, Caffeine, TTX, Dexamethasone, Media, Maneb, PICRO, Lysis, 1:250 LDH, 1:2500 LDH, 1/2 Lysis
+
+Assign spid's:
+No spids are NA.
+Number of unique spids: 13 
+
+Prepare LDH 'p' wells (using Lysis or Half Lysis wells):
+Treatments assigned to wllt 'p' for each apid:
+       apid LDH_trts_in_p_wells N
+1: 20210831       2 * 1/2 Lysis 9
+
+Summary of median p wells by apid:
+       apid   pval
+1: 20210831 0.7134
+
+Assign Wllt:
+wllt will be set to 't' for the MEA components for the following spid's:
+6-PPD, 6-PPD Quinone, 5,5'-Diphenylhydantoin, Caffeine, Dexamethasone, Maneb
+wllt will be set to 't' for the cytotoxicity components for the following spid's:
+6-PPD, 6-PPD Quinone, 5,5'-Diphenylhydantoin, Caffeine, Dexamethasone, Maneb
+
+Well Type Assignments for Control Compounds by assay component:
+       treatment         spid CellTiter Blue LDH MEA components
+1:          DMSO         DMSO              n   n              n
+2:         Media        Media              -   b              b
+3:         PICRO   Picrotoxin              z   z              -
+4:           TTX Tetrodotoxin              x   x              p
+5: 2 * 1/2 Lysis   Tritonx100              -   p              -
+6:         Lysis   Tritonx100              p   x              -
+
+Unique of wllt:
+[1] "n" "t" "p" "b" "z" "x"
+
+Finalize Concentrations:
+
+Concentration Corrections:
+CHANGES MADE/rationaleAll conc's as char:
+NA, 0.001, 0.03, 0.1, 0.26699999999999996, 0.3, 0.8899999999999999, 1, 10, 100, 1000, 2.6699999999999995E-2, 2.6699999999999996E-3, 2.67, 25, 3, 30, 300, 8.8999999999999982E-2, 8.8999999999999982E-3, 9.9999999999999985E-3
+All conc's as numeric:
+NA, 0.001, 0.00267, 0.0089, 0.01, 0.0267, 0.03, 0.089, 0.1, 0.267, 0.3, 0.89, 1, 2.67, 3, 10, 25, 30, 100, 300, 1000
+
+Final Control Compound Conc Assignments by assay component:
+       treatment         spid Conc Label in Source File CellTiter Blue   LDH MEA components
+1:          DMSO         DMSO                 Control,1          0.001 0.001          0.001
+2:         Media        Media                         0              -    NA             NA
+3:         PICRO   Picrotoxin                         1             25    25              -
+4:           TTX Tetrodotoxin                        25              1     1              1
+5: 2 * 1/2 Lysis   Tritonx100                   ½ Lysis              -    NA              -
+6:         Lysis   Tritonx100                   0,Lysis             NA    NA              -
+
+Assign ACId:
+(not doing this for now, since new acnm's need to be registered)
+
+Final Checks:
+Number of unique acnm's present: 46 
+Wllq breakdown:
+   wllq    N
+1:    1 5003
+2:    0 1639
+Number of plates tested: 3 
+Number of experiment dates: 1 
+LDH plates are expected to have 54 points.
+
+The following plates don't have the expected number of points (48 for MEA & AB 54 for LDH):
+(all plates have the expected number of points for each assay component)
+
+Summary of MEA rval's above 300% change by acnm (for wllt 't' or 'n'):
+                                                                      acnm wllts  N
+ 1:                          CCTE_Shafer_MEA_acute_interburst_interval_std   n,t 58
+ 2:                         CCTE_Shafer_MEA_acute_interburst_interval_mean   n,t 49
+ 3:      CCTE_Shafer_MEA_acute_median_interspike_interval_within_burst_std   n,t 19
+ 4:                       CCTE_Shafer_MEA_acute_interburst_interval_CV_std     t 15
+ 5:     CCTE_Shafer_MEA_acute_median_interspike_interval_within_burst_mean     t 15
+ 6:        CCTE_Shafer_MEA_acute_mean_interspike_interval_within_burst_std     t 12
+ 7:                             CCTE_Shafer_MEA_acute_burst_percentage_std     t  6
+ 8:                           CCTE_Shafer_MEA_acute_cross_correlation_HWHM     t  3
+ 9:                  CCTE_Shafer_MEA_acute_inter-network_burst_interval_CV     t  3
+10:                               CCTE_Shafer_MEA_acute_burst_duration_std     t  2
+11:                CCTE_Shafer_MEA_acute_cross_correlation_HWHM_normalized     t  2
+12:       CCTE_Shafer_MEA_acute_mean_interspike_interval_within_burst_mean     t  2
+13:         CCTE_Shafer_MEA_acute_per_network_burst_interspike_interval_cv     t  2
+14: CCTE_Shafer_MEA_acute_per_network_burst_mean_spikes_per_electrode_mean     n  1
+15:              CCTE_Shafer_MEA_acute_per_network_burst_spike_number_mean     n  1
+(note that the wllq is not quite final -
+wllq will be updated for outlier DMSO wells will before creating lvl 0 snapshot)
+
+dat4 saved on: 2022-04-14 

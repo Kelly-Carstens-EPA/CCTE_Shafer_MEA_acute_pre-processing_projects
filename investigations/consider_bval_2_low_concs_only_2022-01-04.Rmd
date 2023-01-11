@@ -1,0 +1,298 @@
+---
+title: "MEA Acute Investigations"
+author: "Amy Carpenter"
+date: "01/04/2022"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    number_sections: true
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(ggplot2)
+library(plotly)
+```
+
+# Following up from 12/15/2022
+
+Before we resume answering the question of "would bval of 2 low only be an improvement overall?", let's see if it would be helpful in ANY individual cases. 
+
+Quick summary of conclusions from this documet:
+
+* bval.2low is pretty much the same as bval.n2low. 
+* Overall, using the bval of 2 low only instead of bval.n2low would bring the bval closer to 0% just as often as it would bring it further away (Despite the fact that the bval.2low should include fewer edgewells)
+* Looking specifically at the cases where the bval.n2low is a concerningly large negative number (e.g. > -50%), bval.2low would actually bring the bval farther away from 0 for 67% of the bval's! So overall, I think using bval.2low might 
+
+
+# Prepare data
+
+```{r, eval=FALSE}
+# Update: I realized that the cndx is assigned BEFORE wllq == 0 rows are removed
+# Which affects the cndx assignment in some cases!!
+# Just in cases there are any other nuances I am misssing, 
+# I'm going to pull the cndx's directly from tcpl instead of using my home brew method
+
+library(tcpl)
+tcplConf(drvr = 'MySQL', user = Sys.getenv('INVITRODB_USER_RO'), pass = Sys.getenv('INVITRODB_PASS_RO'), host = Sys.getenv('INVITRODB_HOST_RO'), db = 'invitrodb')
+tcplListFlds('mc1')
+shafer.acid.tb <- tcplLoadAcid(fld = 'asid', val = 20)
+shafer.acute.acids <- shafer.acid.tb[grepl('_acute_',acnm), acid]
+
+# Get the raw activity values
+mc0 <- tcplLoadData(lvl = 0L, fld = c('acid'), val = shafer.acute.acids, type = 'mc')
+
+# Get the cndx's and merge
+mc1 <- tcplLoadData(lvl = 1L, fld = c('acid'), val = shafer.acute.acids, type = 'mc')
+nrow(mc0) == nrow(mc1) # TRUE
+tcpl.dat <- merge(mc0, mc1, by = intersect(names(mc0), names(mc1)))
+
+# Might as well pull the tcpl resp and bval while I'm here
+# mc3 <- tcplLoadData(lvl = 3L, fld = c('acid'), val = shafer.acute.acids, type = 'mc')
+# oh that's right... tcpll doesn't return the bval
+library(RMySQL)
+con <- dbConnect(drv = MySQL(), user = Sys.getenv('INVITRODB_USER_RO'), pass = Sys.getenv('INVITRODB_PASS_RO'), host = Sys.getenv('INVITRODB_HOST_RO'), dbname = 'invitrodb')
+dbGetQuery(con, paste0('DESC mc3'))
+mc3 <- dbGetQuery(con, paste0('SELECT * FROM mc3 WHERE acid IN(',paste0(shafer.acute.acids,collapse=","),');'))
+dbDisconnect(con)
+setDT(mc3)
+mc3 <- merge(mc3, mc1[, unique(.SD), .SDcols = c('m1id','apid')], by = 'm1id', all.x = T) # add the apid
+# is the bval the same for the up adn dn direction?
+mc3[, .(length(unique(bval))), by = .(acid, apid)][V1 > 1] # empty -> so all are the same
+bval.tb <- mc3[, unique(.SD), .SDcols = c('bval','apid','acid','pval')] # just going by acid instead of aeid since the bval is the same for the up and dn direction
+tcpl.dat <- merge(tcpl.dat, bval.tb, by = intersect(names(tcpl.dat), names(bval.tb)), all.x = T)
+
+# Can we add meta data now?
+tcpl.dat <- tcplPrepOtpt(tcpl.dat)
+# yay!
+rm(list = c('mc0','mc1'))
+
+
+# Calculate the alternative bvals
+dat <- tcpl.dat
+rm(tcpl.dat)
+dat[wllt == 'n', .N, by = spid] # most DMSO, some water, no Media
+dat[, bval.n2low := median(rval[wllq == 1 & (wllt == 'n' | (wllt == 't' & cndx %in% c(1,2)))], na.rm = T), by = .(acnm, apid)]
+dat[, .N, by = signif(bval.n2low, 3) == signif(bval, 3)] # these shoudl be the same..
+# cool, all are the same except for where NA
+dat[is.na(bval)] # looks like a TON of wllq == 0 wells here
+dat[, bval.2low := median(rval[wllq == 1 & (wllt == 't' & cndx %in% c(1,2))], na.rm = T), by = .(acnm, apid)]
+dat[, bval.n := median(rval[wllq == 1 & wllt == 'n'], na.rm = T), by = .(acnm, apid)]
+
+setkey(dat, NULL)
+save(dat, file = 'L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl/investigations/dat_consider_bval_2_low_concs_only_2022-01-04.RData')
+```
+
+``` {r}
+
+load('L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl/investigations/dat_consider_bval_2_low_concs_only_2022-01-04.RData')
+
+# previous data source:
+# load('lvl0_snapshots/mea_acute_lvl0_2020-07-29.RData')
+# dat <-  mea_acute_lvl0
+
+```
+
+
+# Check out a few individual apid
+
+Kelly highlighted the apid where Tetrabutylammonium bromide was tested. Seemed like bval was abnormally low, and that using cndx 1 & 2 only might improve the bval. This is what prompted this entire investigation. So as a gut check, let's see if using bval of cndx 1 & 2 only woudl be an improvement for this apid.
+
+```{r}
+
+# Kelly highlighted a few cases where the bval is definitely low and is causing issues
+# e.g. wherever Tetrabutylammonium bromide was tested
+check.apids <- dat[chnm == 'Tetrabutylammonium bromide', unique(apid)]
+
+dat[apid %in% check.apids, unique(.SD), .SDcols = c('acnm',grep('bval',names(dat),val = T))][order(bval.n2low)]
+p <- ggplot(dat[apid %in% check.apids & !grepl('(LDH)|(AB)',acnm)], aes(x = bval.n2low, y = bval.2low, text = acnm)) +
+  geom_point()+
+  geom_abline(slope = 1, intercept = 0)+
+  xlab('bval.n2low (current)')+
+  ylab('bval.2low (proposed)')+
+  ggtitle(paste0('Comparison of bval with vs without DMSO wells for all assay components\nfor apid ',check.apids,' (where Tetrabutylammonium bromide tested)'))
+plotly::ggplotly(p, tooltip = 'text')
+# Okay, so the bval of 2 low only would be a bit better for some endpoints,
+# Particularly the weighted mean firing rate and the network burst number
+# But others not really  helped.
+
+# NOTE: I found that several cndx 1&2 wells from this apid have wllq == 0 and so had to be removed
+# So for several endpoints, the bval of n+2low may not actually include many additional wells
+# dat[apid %in% check.apids & cndx %in% c(1,2) & wllt == 't' & wllq == 1, .N, by = .(acnm)]
+# approximately 28 per plate 
+# There should be 6*2*3 = 36 per plate
+# So significantly fewer than there could be, but still a decent number added to the pool
+
+ggplot(dat[wllq == 1 & apid %in% check.apids & grepl('_burst_frequency_mean',acnm)], aes(x = cndx, y = rval)) +
+  geom_jitter(aes(color = chnm), width = 0.2, height = 0)+
+  ggtitle(paste0('Burst Frequency Mean rvals for ', check.apids))
+
+dat[, is_edgewell := rowi %in% c(1,6) | coli %in% c(1,8)]
+ggplot(dat[wllq == 1 & apid %in% check.apids & grepl('_burst_frequency_mean',acnm)], aes(x = cndx, y = rval)) +
+  geom_jitter(aes(color = is_edgewell), width = 0.2, height = 0)+
+  ggtitle(paste0('Burst Frequency Mean rvals for ', check.apids))
+# WWHAAAT?? This is the EXCACT opposite of what I expect to see
+# all of the edgwells are near 0, but the middle wells are the ones that are too low!!
+# Perhaps this is from the days when the middle wells were over heating?
+```
+
+
+
+Takeaways:
+
+The bval of 2 low only would be a bit better for some endpoints,
+Particularly the weighted mean firing rate and the network burst number
+But others not really  helped.
+
+Note: I found that several cndx 1&2 wells from this apid have wllq == 0 and so had to be removed
+
+I am quite surprised that the edgewells seem to be doign worse than the middle wells for this apid!! Perhaps this is from the days when the middle wells were over heating?
+
+
+Overall, conclusion is that the bval of cndx 1 & 2 only is not really helpful here
+
+
+# Are there ANY apid where bval of 2 only is a signficant improvement?
+
+``` {r}
+
+# Are there ANY apid where bval of 2 only is a signficant improvement?
+all.bval.tb <- dat[, unique(.SD), .SDcols = c('bval.n2low','bval.2low','bval.n', 'apid', 'acid','acnm')]
+ggplot(all.bval.tb[!grepl('(LDH)|(AB)',acnm)], aes(x = bval.n2low, y = bval.2low))+
+  geom_point(pch = 1)+
+  geom_vline(xintercept = 0)+
+  geom_hline(yintercept = 0)+
+  geom_abline(slope = 1, intercept = 0, color = 'blue')+
+  ggtitle('Correlation of bval with vs without DMSO\nfor all MEA Acute apid-acnms')
+# This honestly just looks like random noise
+# I'm not seeing any trend or meaningful subset of points where the bval of 2 only is all that different
+# I was particularly hoping to see some points where bval.n2low is a large negative number, and bval.2low helps raise it up
+# but I'm not seeing a good deal of that
+# In fact, there are 4 points where the bval.2low seems to make it even worse!
+
+ggplot(all.bval.tb[!grepl('(LDH)|(AB)',acnm)], aes(x = bval.n2low, y = bval.2low))+
+  geom_point(pch = 1)+
+  geom_vline(xintercept = 0)+
+  geom_hline(yintercept = 0)+
+  geom_abline(slope = 1, intercept = 0, color = 'blue')+
+  ylim(-100, 0)+
+  xlim(-100, 0)+
+  ggtitle('Correlation of bval with vs without DMSO\nfor all MEA Acute apid-acnms')
+
+# Looking at the individual endpoint with the worst bval's
+acnmi <- 'CCTE_Shafer_MEA_acute_cross_correlation_area'
+ggplot(dat[acnm == acnmi], aes(x = bval.n2low, y = bval.2low)) +
+  geom_point()+
+  geom_abline(slope = 1, intercept = 0)+
+  ggtitle(paste0(acnmi,'\nBval of 2 Lowest conc\'s only vs\nBval of n wells + 2 lowest conc\'s'))
+# Still no real improvement
+
+
+# So am I convinced? Is this enough evidence by which to... give up on trying bval.2low?
+```
+
+Doesn't look like bval.2low would be of much help.
+
+So am I convinced? Is this enough evidence by which to... give up on trying bval.2low?
+
+
+# What is the largest difference between these bvals? (or percent difference?)
+```{r}
+# What is the largest difference between these bvals? (or percent difference?)
+# in what direction? (closer or farther from 0? Currently above or below 0?)
+dat[, bval_perc_diff := (bval.n2low - bval.2low)/abs(bval.n2low)]
+# dat[, summary(bval_perc_diff)] # actually, we have so many bval's close to 0, this is not great
+dat[, bval_diff := (bval.2low - bval.n2low)]
+ggplot(dat[!grepl('(LDH)|(AB)',acnm)], aes(x = bval.n2low, y = bval_diff)) +
+  geom_point(pch = 1)+
+  geom_hline(yintercept = 0)+
+  geom_vline(xintercept = 0)+
+  ylab('bval.2low - bval.n2low')+
+  ggtitle('Difference between current and proposed bval vs current bval\nfor all MEA Acute apid-acnms')
+
+# Positive bval diff -> bval.2low is greater than bval.n2low
+dat[bval.n2low < 0, summary(bval_diff)]
+# max is an increase of 60
+dat[bval.n2low < 0 & bval_diff >= 50, .N, by = .(apid, acnm, bval.n2low, bval.2low)]
+# I wouldn't call this an improvment -> it's bringing the bval much further away from 0!
+
+# Greatest amount by which bval.2low brings the bval closer to 0
+dat[bval.n2low < 0 & abs(bval.2low - 0) < abs(bval.n2low - 0), max(abs(bval.n2low) - abs(bval.2low))]
+dat[bval.n2low < 0 & abs(bval.n2low) - abs(bval.2low) >= 22, .N, by = .(apid, acnm, bval.n2low, bval.2low)]
+# okay, so this is the plate where it helps the most
+
+dat[bval.n2low < 0 & abs(bval.n2low) - abs(bval.2low) >= 15, .N, by = .(apid, acnm, bval.n2low, bval.2low)]
+# okay, so yay, i have identified a handful of plates where it really helps!!
+```
+
+Okay, so yay, i have identified a handful of plates where bval.2low would really help!!
+
+However, I think I need to establish - how often would bval.2low bring the bval closer to 0 vs how often would it bring it farther from 0?
+
+
+# How often would using bval.2low instead of bval.n2low help vs hurt?
+```{r}
+
+# Let's try to narrow in on the conclusion I am tryign to make below:
+dat[, bval_2low_closer_to_0 := abs(bval.2low) < abs(bval.n2low)]
+# dat[is.na(bval_2low_closer_to_0)] # ah, right, this is the plate with essentially no control wells
+dat[, .(num_apid_acnm = length(unique(paste0(apid,acnm)))), by = .(bval_2low_closer_to_0)]
+# well that's pretty straightforward!!
+
+# But, I mostly only care about the cases where the bval.n2low is "really bad"
+dat[, bval_n2low_cat := 'bval.n2low: -50 - 50']
+dat[bval.n2low < -50, bval_n2low_cat := 'bval.n2low <-50']
+dat[bval.n2low > 50, bval_n2low_cat := 'bval.n2low >50']
+tb1 <- dat[!is.na(bval.n2low), .(num_apid_acnm = length(unique(paste0(apid,acnm)))), by = .(bval_n2low_cat, bval_2low_closer_to_0)]
+dcast(tb1, bval_2low_closer_to_0 ~ bval_n2low_cat,  value.var = 'num_apid_acnm')
+
+```
+Review:
+
+* Current bval uses bval of DMSO AND the 2 lowest concentrations tested on each apid
+* 1 apid = 1 experiment date, usually 3 plates
+* We would expect/hope most bval's to be close to 0 (this would indicate a 0% change in activity before vs after treatment with a control substance)
+* However, several bval's are quite far from 0%. We think this may be due to a combination of the DMSO effect AND the edgewell effect.
+* We want to try setting the bval to the median of the 2 lowest concetnrations tested only, since most of these wells are not edgewells, to see if that would produce better bval's
+
+Conclusions: 
+
+* bval.2low is pretty much the same as bval.n2low. 
+* Overall, using the bval of 2 low only instead of bval.n2low would bring the bval closer to 0% just as often as it would bring it further away (Despite the fact that the bval.2low should include fewer edgewells)
+* Looking specifically at the cases where the bval.n2low is a concerningly large negative number (e.g. > -50%), bval.2low would actually bring the bval farther away from 0 for 67% of the bval's! So overall, I think using bval.2low might 
+
+
+One last thing: Would the bval of DMSO wells only actually be an improvement?
+
+
+# How does bval.n compare?
+``` {r}
+# Perhaps worth it to check out how bval.n compares as well? (I'm assuming it wouldn't be any better than )
+ggplot(dat[!grepl('(LDH)|(AB)',acnm)], aes(x = bval.n2low, y = bval.n))+
+  geom_point(pch = 1)+
+  geom_abline(slope = 1, intercept = 0, col = 'blue')+
+  ggtitle('Correlation of bval of with vs with the 2 lowest concentrations tested\nfor all MEA Acute apid-acnms')
+# maybe I'm seeeing things... but is there slighlty more mass abvoe the line?
+
+ggplot(dat[!grepl('(LDH)|(AB)',acnm)], aes(x = bval.n2low, y = bval.n))+
+  geom_point(pch = 1)+
+  geom_abline(slope = 1, intercept = 0, col = 'blue')+
+  ylim(-100, 100)+
+  xlim(-100, 100)+
+  ggtitle('Correlation of bval of with vs with the 2 lowest concentrations tested\nfor all MEA Acute apid-acnms')
+
+
+```
+
+Maaaybe there is a tiny bit more mass above the line than below, but it's only a marginal difference. 
+
+I would say this is not really an improvement (i.e., bringing the large negative bval's closer to 0) -> maybe in a few cases, but only marginally so. Again, it would probably offer a significant improvement just as often as it would help
+
+
+# Next step:
+Try out other normalizaiton methods
+(See outlined in previous html file 'game plan'!)
+

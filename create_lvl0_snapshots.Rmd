@@ -1,0 +1,28 @@
+---
+title: Get an mc0 snapshot and save corresponding dat4
+output: pdf_document
+---
+
+```{r, message = FALSE}
+library(data.table)
+setwd("L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl/")
+source("mea-acute-neural-stats-to-mc0-scripts/get_latest_dat.R")
+```
+
+```{r}
+dat4 <- get_latest_dat(lvl = "dat4")
+```
+
+Save the level 0 srcf and corresponding dat4 snaphshots
+
+```{r}
+# all dat4
+save(dat4, file = paste0("lvl0_snapshots/dat4_",as.character.Date(Sys.Date()),".RData"))
+
+# mc0 dat
+mc0_char <- paste0("mea_acute_lvl0")
+assign(mc0_char, value = dat4[, .(spid, apid, rowi, coli, conc, acid, wllt, wllq, srcf, rval)])
+save(list = c(mc0_char), file = paste0("lvl0_snapshots/",mc0_char,"_",as.character.Date(Sys.Date()),".RData"))
+
+```
+
