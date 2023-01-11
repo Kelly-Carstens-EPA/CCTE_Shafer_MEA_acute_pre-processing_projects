@@ -1,0 +1,12 @@
+dummy_test files used for MEA acute pre-processing for TCPL
+Created with the script gather_files-functions.R
+Date ran: 2020-05-15 16:46:08
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 4 files from 1 directories.
+
+L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl/dummy_test
+L:\Lab\NHEERL_MEA\Carpenter_Amy\pre-process_mea_acute_for_tcpl\dummy_test\TC_20190529_MW69-0102_13_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Carpenter_Amy\pre-process_mea_acute_for_tcpl\dummy_test\TC_20190529_MW69-0102_13diffAnalysisTiming_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Carpenter_Amy\pre-process_mea_acute_for_tcpl\dummy_test\TC_20190529_MW69-0102_13diffsettings_00(000)(000).csv
+L:\Lab\NHEERL_MEA\Carpenter_Amy\pre-process_mea_acute_for_tcpl\dummy_test\TC_20190529_MW69-0102_13missingParameters_01(000)(000).csv

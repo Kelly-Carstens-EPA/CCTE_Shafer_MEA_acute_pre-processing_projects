@@ -1,0 +1,58 @@
+DNT2019 files used for MEA acute pre-processing for TCPL
+File types: calculations
+Created with the script gather_files-functions.R
+Date ran: 2020-05-18 11:35:13
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 13 files from 13 directories.
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190515 Culture DNT G1 G2/DNT Acute Group 1
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190515 Culture DNT G1 G2\DNT Acute Group 1\20190515_Calculations_DNT Group_1-DONE.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190515 Culture DNT G1 G2/DNT Acute Group 2
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190515 Culture DNT G1 G2\DNT Acute Group 2\20190515_Calculations_DNT Group_2.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190529 Culture DNT G3 G4/Group 3
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190529 Culture DNT G3 G4\Group 3\20190529_Calculations_DNT Group_3a.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190529 Culture DNT G3 G4/Group 4
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190529 Culture DNT G3 G4\Group 4\20190529_Calculations_DNT Group_4.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190605 Culture DNT G5/Group 5
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190605 Culture DNT G5\Group 5\20190605_Calculations_DNT Group_5_updated_concentrations.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190612 Culture  DNT G7 G8/Group 7
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190612 Culture  DNT G7 G8/Group 7/20190612_Calculations_DNT Group_7_corrected_plate_id.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190612 Culture  DNT G7 G8/Group 8
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190612 Culture  DNT G7 G8\Group 8\20190612_Calculations_DNT Group_8a.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190717 Culture DNT G5 repeat G6/Group 5 Repeat
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190717 Culture DNT G5 repeat G6\Group 5 Repeat\20190717_Calculations_DNT Group_5 Repeata.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190717 Culture DNT G5 repeat G6/Group 6A
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190717 Culture DNT G5 repeat G6\Group 6A\20190717_Calculations_DNT Group_6 Repeat.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190814 Culture DNT G1 G2 repeat/Group 1 Repeat
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190814 Culture DNT G1 G2 repeat\Group 1 Repeat\20190814_Calculations_DNT Group_1 Repeat_update20200722.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190814 Culture DNT G1 G2 repeat/Group 2 Repeat
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190814 Culture DNT G1 G2 repeat\Group 2 Repeat\20190814_Calculations_DNT Group_2 Repeat.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190911 Culture DNT G5 various repeat
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190911 Culture DNT G5 various repeat\20190911_Calculations_DNT Various Repeat1.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project - DNT 2019/Project DNT 2019 Acute MEA/20190925 Culture DNT Repeats
+L:\Lab\NHEERL_MEA\Project - DNT 2019\Project DNT 2019 Acute MEA\20190925 Culture DNT Repeats\20190925_Calculations_DNT Group 6 and 7 Repeat.xlsx

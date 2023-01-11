@@ -1,0 +1,83 @@
+Created with the script check-functions.R, writeCheckSummary() on 2021-09-13
+Reading from TimeComparison_neural_stats_files_log_2021-09-13.txt...
+Got 108 files.
+
+Neural Statistics Compiler Parameters Summary:
+There are 0 files with parameter data missing:
+
+
+
+Neural Statistics Compiler Timing Summary:
+There are 72 files with analysis duration above or below the threshold:
+AC_20210324_MW75-8015_15_01_15.csv analysis duration is 899.75s
+AC_20210324_MW75-8015_15_01_20.csv analysis duration is 1199.75s
+AC_20210324_MW75-8015_15_01_25.csv analysis duration is 1499.75s
+AC_20210324_MW75-8015_15_01_30.csv analysis duration is 1799.75s
+AC_20210324_MW75-8016_15_01_15.csv analysis duration is 900s
+AC_20210324_MW75-8016_15_01_20.csv analysis duration is 1200s
+AC_20210324_MW75-8016_15_01_25.csv analysis duration is 1500s
+AC_20210324_MW75-8016_15_01_30.csv analysis duration is 1800s
+AC_20210324_MW75-8017_15_01_15.csv analysis duration is 900s
+AC_20210324_MW75-8017_15_01_20.csv analysis duration is 1200s
+AC_20210324_MW75-8017_15_01_25.csv analysis duration is 1500s
+AC_20210324_MW75-8017_15_01_30.csv analysis duration is 1800s
+AC_20210609_MW75-9111_13_01_15.csv analysis duration is 899.75s
+AC_20210609_MW75-9111_13_01_20.csv analysis duration is 1199.75s
+AC_20210609_MW75-9111_13_01_25.csv analysis duration is 1499.75s
+AC_20210609_MW75-9111_13_01_30.csv analysis duration is 1799.75s
+AC_20210609_MW75-9112_13_01_15.csv analysis duration is 899.75s
+AC_20210609_MW75-9112_13_01_20.csv analysis duration is 1199.75s
+AC_20210609_MW75-9112_13_01_25.csv analysis duration is 1499.75s
+AC_20210609_MW75-9112_13_01_30.csv analysis duration is 1799.75s
+AC_20210609_MW75-9113_13_01_15.csv analysis duration is 899.75s
+AC_20210609_MW75-9113_13_01_20.csv analysis duration is 1199.75s
+AC_20210609_MW75-9113_13_01_25.csv analysis duration is 1499.75s
+AC_20210609_MW75-9113_13_01_30.csv analysis duration is 1799.75s
+AC_20210630_MW78-4401_13_01_15.csv analysis duration is 899.75s
+AC_20210630_MW78-4401_13_01_20.csv analysis duration is 1199.75s
+AC_20210630_MW78-4401_13_01_25.csv analysis duration is 1499.75s
+AC_20210630_MW78-4401_13_01_30.csv analysis duration is 1799.75s
+AC_20210630_MW78-4402_13_01_15.csv analysis duration is 900s
+AC_20210630_MW78-4402_13_01_20.csv analysis duration is 1200s
+AC_20210630_MW78-4402_13_01_25.csv analysis duration is 1500s
+AC_20210630_MW78-4402_13_01_30.csv analysis duration is 1800s
+AC_20210630_MW78-4406_13_01_15.csv analysis duration is 899.75s
+AC_20210630_MW78-4406_13_01_20.csv analysis duration is 1199.75s
+AC_20210630_MW78-4406_13_01_25.csv analysis duration is 1499.75s
+AC_20210630_MW78-4406_13_01_30.csv analysis duration is 1799.75s
+AC_20210707_MW78-4417_13_01_15.csv analysis duration is 899.75s
+AC_20210707_MW78-4417_13_01_20.csv analysis duration is 1199.75s
+AC_20210707_MW78-4417_13_01_25.csv analysis duration is 1499.75s
+AC_20210707_MW78-4417_13_01_30.csv analysis duration is 1799.75s
+AC_20210707_MW78-4419_13_01_15.csv analysis duration is 899.75s
+AC_20210707_MW78-4419_13_01_20.csv analysis duration is 1199.75s
+AC_20210707_MW78-4419_13_01_25.csv analysis duration is 1499.75s
+AC_20210707_MW78-4419_13_01_30.csv analysis duration is 1799.75s
+AC_20210707_MW78-6201_13_01_15.csv analysis duration is 899.75s
+AC_20210707_MW78-6201_13_01_20.csv analysis duration is 1199.75s
+AC_20210707_MW78-6201_13_01_25.csv analysis duration is 1499.75s
+AC_20210707_MW78-6201_13_01_30.csv analysis duration is 1799.75s
+AC_20210714_MW75-9114_15_01_15.csv analysis duration is 899.75s
+AC_20210714_MW75-9114_15_01_20.csv analysis duration is 1199.75s
+AC_20210714_MW75-9114_15_01_25.csv analysis duration is 1499.75s
+AC_20210714_MW75-9114_15_01_30.csv analysis duration is 1799.75s
+AC_20210714_MW75-9115_15_01_15.csv analysis duration is 900s
+AC_20210714_MW75-9115_15_01_20.csv analysis duration is 1200s
+AC_20210714_MW75-9115_15_01_25.csv analysis duration is 1500s
+AC_20210714_MW75-9115_15_01_30.csv analysis duration is 1800s
+AC_20210714_MW75-9116_15_01_15.csv analysis duration is 899.75s
+AC_20210714_MW75-9116_15_01_20.csv analysis duration is 1199.75s
+AC_20210714_MW75-9116_15_01_25.csv analysis duration is 1499.75s
+AC_20210714_MW75-9116_15_01_30.csv analysis duration is 1799.75s
+AC_20210811_MW75-9202_15_01_15.csv analysis duration is 899.75s
+AC_20210811_MW75-9202_15_01_20.csv analysis duration is 1199.75s
+AC_20210811_MW75-9202_15_01_25.csv analysis duration is 1499.75s
+AC_20210811_MW75-9202_15_01_30.csv analysis duration is 1799.75s
+AC_20210811_MW75-9203_15_01_15.csv analysis duration is 900s
+AC_20210811_MW75-9203_15_01_20.csv analysis duration is 1200s
+AC_20210811_MW75-9203_15_01_25.csv analysis duration is 1500s
+AC_20210811_MW75-9203_15_01_30.csv analysis duration is 1800s
+AC_20210811_MW75-9204_15_01_15.csv analysis duration is 900s
+AC_20210811_MW75-9204_15_01_20.csv analysis duration is 1200s
+AC_20210811_MW75-9204_15_01_25.csv analysis duration is 1500s
+AC_20210811_MW75-9204_15_01_30.csv analysis duration is 1800s

@@ -1,0 +1,193 @@
+---
+title: "MEA Acute MC TCPL Impact of Exclusion of LDH"
+author: "Amy Carpenter"
+date: "July 20, 2022"
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+    df_print: paged
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(out.width = '100%')
+
+library(data.table)
+library(openxlsx)
+library(stringi)
+library(ggplot2)
+```
+
+# Purpose ----
+To check how much the cytotoxicity results will be affected if we exclude the LDH data. We are considering excluding the LDH because that is what was done in Kosnik et al., 2019.
+
+
+```{r }
+# knitr::spin('investigations/sc_and_cytotox_endpoints_July2022/R/mea_acute_mc_impact_of_exclusion_of_LDH_2022-08-03.R', precious = T, doc = '^##\\s*')
+```
+
+# Prepare data ----
+
+```{r }
+cytodat_file <- list.files(path = 'investigations/data', pattern = 'cyto_mc5_mc6_invitrodb_2022-02-10', full.names = T)
+if (length(cytodat_file) > 0) {
+  load(cytodat_file)
+} else {
+  load('C:/Users/ACARPE01/OneDrive - Environmental Protection Agency (EPA)/Profile/Documents/mea_nfa_vs_acute/data/mea_acute_and_dev_mc5_mc6_2022-02-10.RData')
+  mc.cyto <- mc5_mc6[assay_type == 'acute' & grepl('(LDH)|(AB)',aenm)]
+  description <- paste0('LDH and AB MEA Acute mc TCPL data, taken from invitrodb 2022-02-10.\nData extracted from C:/Users/ACARPE01/OneDrive - Environmental Protection Agency (EPA)/Profile/Documents/mea_nfa_vs_acute/data/mea_acute_and_dev_mc5_mc6_2022-02-10.RData on ',Sys.Date(),' with the script mea_acute_mc_impact_of_exclusion_of_LDH_2022-08-03.R.')
+  rm(mc5_mc6)
+  save(mc.cyto, description, file = file.path('investigations/data','cyto_mc5_mc6_invitrodb_2022-02-10.RData'))
+}
+
+# Load tcpl results
+# load('../../mea_nfa_vs_acute/data/mea_acute_and_dev_mc5_mc6_2022-02-10.RData')
+mc5_mc6 <- as.data.table(read.xlsx('L:/Lab/NHEERL_MEA/ccte_shafer_mea_acute/ccte_shafer_mea_acute_multiconc_8Feb2022.xlsx', sheet = 'mc5+mc6')) 
+# have to get cyto data from eslewhere
+# but L:/Lab/NHEERL_MEA/ccte_shafer_mea_acute/mc5_mc6_CCTE_SHAFER_MEA_ACUTE_05AUG2020.csv has slightly diff results than I got with more recent pull)
+# Subset to the more widely accepted endpoints
+aeid.tb <- as.data.table(read.csv('lvl0_snapshots/Documentation/update_materials_sent_Jan2022/mea_acute_status_by_aenm_2022-01-27.csv'))
+length(aeid.tb[can_be_released == 1 & notes != 'release sc only; can delete mc data', aeid])  # 32 = 2 cyto + 15 up + 15 dn. Yay!
+setdiff(mc5_mc6$aenm, aeid.tb$aenm) # empty
+mc5_mc6 <- mc5_mc6[aeid %in% aeid.tb[can_be_released == 1 & notes != 'release sc only; can delete mc data', aeid]]
+mc.dat <- rbind(mc5_mc6, mc.cyto, fill = T)
+
+# OLD:
+# mc.dat <- read.xlsx('L:/Lab/NHEERL_MEA/ccte_shafer_mea_acute/ccte_shafer_mea_acute_multiconc_8Feb2022.xlsx', sheet = 'mc5+mc6')
+# # Have to get the cytotoxicity data from the older table, because the cyto endpoints were not re-pipelined in Feb 2022, since no changes were needed to the normalization methods
+# mc.dat2 <- as.data.table(read.csv('L:/Lab/NHEERL_MEA/ccte_shafer_mea_acute/mc5_mc6_CCTE_SHAFER_MEA_ACUTE_05AUG2020.csv'))
+# setDT(mc.dat)
+# setdiff(names(mc.dat), names(mc.dat2))
+# setdiff(names(mc.dat2), names(mc.dat))
+# mc.dat2[, X := NULL] # this is just row.names
+# mc.dat2 <- mc.dat2[grepl('(LDH)|(AB)',aenm)]
+# mc.dat <- rbind(mc.dat, mc.dat2)
+```
+
+
+What is the aeid again?
+
+```{r }
+mc.dat[grepl("LDH",aenm), unique(aeid)]
+```
+
+Recall that this mc data only includes the cytotox and 15 main acnm's from kosnik 2019:
+
+```{r }
+mc.dat[, .N, by = .(aenm)]
+```
+
+How many sample screened and active?
+
+```{r }
+mc.dat[grepl("(LDH)|(AB)",aenm), length(unique(spid)), by = .(aenm, hitc)][order(aenm, hitc)]
+```
+
+What were the cutoffs?
+
+```{r }
+mc.dat[grepl("(LDH)|(AB)",aenm), .N, by = .(aenm, bmad, coff)]
+```
+
+# Compare LDH and AB hit calls ----
+
+```{r }
+mc.dat[, .(ldh_hitc = unique(hitc[grepl('LDH',aenm)]),
+                                   ab_hitc = unique(hitc[grepl('AB',aenm)])),
+       by = .(dsstox_substance_id, spid, chnm)][, .(num_samples = .N), by = .(ldh_hitc, ab_hitc)][order(ldh_hitc, ab_hitc)]
+```
+
+Okay, so there are 11 samples that are only a hit in the LDH, but not in AB<br>
+(note that the 6 samples that are NA for ab_hitc just weren't tested in the alamar blue assay)
+
+What were the bmad's and cutoffs?
+
+```{r }
+ggplot(mc.dat[grepl('LDH',aenm)], aes(x = max_med))+
+  geom_histogram(aes(fill = as.factor(hitc)))+
+  geom_vline(aes(xintercept = coff), lty = 'dashed')
+```
+
+What percent of substances with a max_med above the coff were not hits?
+
+```{r }
+mc.dat[grepl('LDH',aenm), .N, by = .(max_med_above_coff = max_med >= coff, hitc)]
+```
+
+From Kosnik et al., 2019: "The LDH assay exhibited small BMAD values, resulting in responses for many chemicals being greater than the 3*BMAD threshold, even though they did not demonstrate a concentration response. This decreased the reliability of this parameter for detecting truly cytotoxic compounds and therefore cytotoxicity was characterized using only the CTB assay. Nineteen of these chemicals were also active in the CTB assay indicating potential cytotoxicity. "<br>
+If 13 samples qualified as "many chemicals", I guess we are still seeign that... hmm.<br>
+
+How flag-y are the 11 LDH hits?
+
+```{r }
+ldh.only.hits <- mc.dat[, .(ldh_hitc = unique(hitc[grepl('LDH',aenm)]),
+           ab_hitc = unique(hitc[grepl('AB',aenm)])),
+       by = .(dsstox_substance_id, spid, chnm)][ldh_hitc == 1 & ab_hitc == 0, unique(spid)]
+mc.dat[spid %in% ldh.only.hits & grepl('LDH',aenm), .(spid, bmad, coff, max_med, max_med_conc, modl, modl_rmse, flag_length, flag_ids)][order(flag_length)]
+```
+
+Many have more than 3 flags, but note that the 50% efficacy flag is probably not appropriate for this assay
+<br> Are any of these substances borderline active in the AB?
+
+```{r }
+mc.dat[spid %in% ldh.only.hits & grepl('AB',aenm), .(spid, bmad, coff, max_med, max_med_conc, modl, modl_rmse, flag_length, flag_ids)][order(max_med)]
+```
+
+The last 2 are semi-close on the max_med to the cutoff, but all fit a cnst model
+
+Okay, what would be the result/impact of removing LDH?
+
+* If these compounds are only cytotoxic, no other activity -> then they coudl be missed as hits
+* if the activity of these compounds is totally driven by cytotoxicity -> then the hits in the other assay could be mistakenly labelled as selective.
+
+Let's check those 2 scenarios. If neither of these are the case, then I think it's all good?
+
+Actually, I'm more just concerned about scenario one (which seems less likely to me). Let's check it out.
+
+```{r }
+mc.dat[spid %in% ldh.only.hits, .(mea_hit_count = sum(hitc[!grepl('LDH',aenm)] %in% 1)), by = .(spid, dsstox_substance_id)][order(mea_hit_count)]
+```
+
+Oh wow, 3 of these don't have any other hits!
+Let's look at the curves...
+Were these hits at a really high conc?
+
+```{r }
+mc.dat[, hit_count_no_ldh := sum(hitc[!grepl('LDH',aenm)] %in% 1), by = .(spid, dsstox_substance_id)]
+mc.dat[spid %in% ldh.only.hits & grepl('LDH',aenm), .(spid, dsstox_substance_id, max_med, modl_tp, coff, modl_ga, logc_max, hit_count_no_ldh, flag_length)][order(hit_count_no_ldh)]
+mc.dat[spid %in% ldh.only.hits & grepl('LDH',aenm)  & hit_count_no_ldh < 3, .(spid, dsstox_substance_id, chnm, max_med, modl_tp, coff, modl_ga, logc_max, hit_count_no_ldh, flag_ids)][order(hit_count_no_ldh)]
+
+mc.dat[spid %in% ldh.only.hits & grepl('LDH',aenm)  & hit_count_no_ldh == 0, .(spid, dsstox_substance_id, chnm, max_med, modl_tp, coff, modl_ga, logc_max, hit_count_no_ldh, flags)][order(hit_count_no_ldh)]
+```
+
+ah, the 3 that are only a hit in the LDH have a flag for being borderline.<br>
+How many of all LDH-only hits have a borderlien flag?
+
+```{r }
+mc.dat[spid %in% ldh.only.hits & grepl('LDH',aenm), .N, by = .(borderline_active = grepl('Borderline active',flags))]
+```
+
+Of those that are not borderline, what does the activity look like elsewhere?
+
+```{r }
+mc.dat[spid %in% ldh.only.hits & grepl('LDH',aenm) & !grepl('Borderline active',flags), .(spid, dsstox_substance_id, chnm, hit_count_no_ldh)]
+```
+
+These 4 all at least have 4 other hits<br>
+Regardless of what we do, we are goign to miss some borderlien chemicals. As Tim keeps emphasizing, I have more important things to do than validating teh LDH acute assay. So I'm okay with dropping it, will miss having.<br>
+But I think doing this helps remind me that we don't expect these assays to be perfect -  so the key is to keep evaluating with assay controls, to understanding our confidence, rather than just hope that we can trust the hit calls and ac50s.
+
+# How do the potencies in AB and LDH assay compare? ----
+
+```{r }
+ldh.and.ab.hits <- mc.dat[, .(both_cyto_hits = sum(hitc[grepl('(AB)|(LDH)',aenm)] == 1) == 2), by = .(spid)][both_cyto_hits == TRUE, spid]
+mc.dat[spid %in% ldh.and.ab.hits & grepl('(LDH)|(AB)',aenm), .(LDH_ac50 = modl_ga[grepl('LDH',aenm)],
+                                                               AB_ac50 = modl_ga[grepl('AB',aenm)]),
+       by = .(chnm, dsstox_substance_id, spid)][order(LDH_ac50, AB_ac50)][, .(AB_minus_LDH = AB_ac50 - LDH_ac50), by = .(chnm, spid, LDH_ac50, AB_ac50, dsstox_substance_id)]
+```
+
+So in all but 2/8 samples that were a hit in both AB and LDH, AB is actually more sensitive
+
+# Status ----
+July 20, 2022: Melissa pointed out it could be useful to look at the curves. Tim noted that he could be convinced to change his mind on this decision to remove teh LDH endoints. 

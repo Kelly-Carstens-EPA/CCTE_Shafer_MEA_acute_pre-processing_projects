@@ -1,0 +1,42 @@
+TSCA2019 files used for MEA acute pre-processing for TCPL
+File types: calculations
+Created with the script gather_files-functions.R
+Date ran: 2020-11-17 14:18:30
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 9 files from 9 directories.
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191023 Culture/Set 1
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 1\20191023_Calculations_TSCA SPS_Set 1.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191023 Culture/Set 2
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191023 Culture\Set 2\20191023_Calculations_TSCA SPS_Set 2.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191106 Culture/Set 3
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 3\20191106_Calculations_TSCA SPS_Set 3.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191106 Culture/Set 4
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191106 Culture\Set 4\20191106_Calculations_TSCA SPS_Set 4.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191120 Culture/Set 5
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 5\20191120_Calculations_TSCA SPS_Set 5.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191120 Culture/Set 6
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191120 Culture\Set 6\20191120_Calculations_TSCA SPS_Set 6.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191204 Culture/Set 7
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 7\20191204_Calculations_TSCA SPS_Set 7.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20191204 Culture/Set 8
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20191204 Culture\Set 8\20191204_Calculations_TSCA SPS_Set 8.xlsx
+
+
+L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA SPS/20201021 Culture
+L:\Lab\NHEERL_MEA\Project TSCA 2019\Acute TSCA SPS\20201021 Culture\20201021_Calculations_TSCA SPS_Repeats.xlsx

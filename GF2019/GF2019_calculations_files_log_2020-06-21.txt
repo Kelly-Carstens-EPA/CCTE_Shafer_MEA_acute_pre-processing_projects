@@ -1,0 +1,10 @@
+GF2019 files used for MEA acute pre-processing for TCPL
+File types: calculations
+Created with the script gather_files-functions.R
+Date ran: 2020-06-21 20:06:59
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 1 files from 1 directories.
+
+L:/Lab/NHEERL_MEA/Project - Glufosinate/Acute Assay/20190911 Glufosinate
+L:\Lab\NHEERL_MEA\Project - Glufosinate\Acute Assay\20190911 Glufosinate\20190911_Acute Calculations_Glufosinate.xlsx

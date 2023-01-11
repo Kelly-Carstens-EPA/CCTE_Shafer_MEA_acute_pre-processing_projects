@@ -1,0 +1,22 @@
+Created with the script check-functions.R, writeCheckSummary() on 2021-04-26
+Reading from HESIConvulsant2018a_neural_stats_files_log_2021-04-26.txt...
+Got 12 files.
+
+Neural Statistics Compiler Parameters Summary:
+There are 0 files with parameter data missing:
+
+
+
+Neural Statistics Compiler Timing Summary:
+There are 11 files with analysis duration above or below the threshold:
+HESI_20180314_MW1207-15_12_00(000)_Neural Statistics Compiler(000).csv analysis duration is 1201.5s
+HESI_20180314_MW1207-16_12_00(000)_Neural Statistics Compiler(000).csv analysis duration is 901s
+HESI_20180314_MW1207-16_12_01(000)_Neural Statistics Compiler(000).csv analysis duration is 3607.25s
+HESI_20180314_MW1207-17_12_00(001)_Neural Statistics Compiler(000).csv analysis duration is 942.25s
+HESI_20180314_MW1207-17_12_01(000)_Neural Statistics Compiler(000).csv analysis duration is 3600.75s
+HS_Cortical_20180322_MW1207-18_12_00(000)_Neural Statistics Compiler(000).csv analysis duration is 1566s
+HS_Cortical_20180322_MW1207-18_12_01(001)_Neural Statistics Compiler(000).csv analysis duration is 1407.25s
+HS_Cortical_20180322_MW1207-19_12_00(000)_Neural Statistics Compiler(000).csv analysis duration is 906.5s
+HS_Cortical_20180322_MW1207-19_12_01(000)_Neural Statistics Compiler(000).csv analysis duration is 3601.5s
+HS_Cortical_20180322_MW1207-20_12_00(000)_Neural Statistics Compiler(000).csv analysis duration is 912.5s
+HS_Cortical_20180322_MW1207-20_12_01(000)_Neural Statistics Compiler(000).csv analysis duration is 3616s

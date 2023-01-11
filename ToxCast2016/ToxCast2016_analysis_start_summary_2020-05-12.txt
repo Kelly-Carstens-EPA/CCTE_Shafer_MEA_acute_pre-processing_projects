@@ -1,0 +1,14 @@
+Created with the script data_prep-functions.R, writeFlagSummary() on 2020-05-12
+There are 408 files that start at 0 seconds.
+There are 4 files that start after 0 but before 10 seconds.
+There are 2 files that start after 10 seconds.
+
+Files that start after 0 but before 10 seconds.
+L:/Lab/NHEERL_MEA/MAESTRO SYSTEM/ToxCast Compounds/Phase I and II Con Response/Experiment Date/6-2-16/Burst Analysis/Network Burst Data/TC_MW 1056-41_20160518_20160602_15_01(000)_Neural Statistics Compiler(000).csv
+L:/Lab/NHEERL_MEA/MAESTRO SYSTEM/ToxCast Compounds/Phase I and II Con Response/Experiment Date/6-2-16/Burst Analysis/Network Burst Data/TC_MW 1060-33_20160518_20160602_15_00(000)_Neural Statistics Compiler(000).csv
+L:/Lab/NHEERL_MEA/MAESTRO SYSTEM/ToxCast Compounds/Phase I and II Con Response/Experiment Date/6-2-16/Burst Analysis/Network Burst Data/TC_MW 1060-33_20160518_20160602_15_01(000)_Neural Statistics Compiler(000).csv
+L:/Lab/NHEERL_MEA/MAESTRO SYSTEM/ToxCast Compounds/Phase I and II Con Response/Experiment Date/6-2-16/Burst Analysis/Network Burst Data/TC_MW 1060-34_20160518_20160602_15_01(000)_Neural Statistics Compiler(000).csv
+
+Files that start after 10 seconds.
+L:/Lab/NHEERL_MEA/MAESTRO SYSTEM/ToxCast Compounds/Phase I and II Con Response/Experiment Date/6-2-16/Burst Analysis/Network Burst Data/TC_MW 1056-41_20160518_20160602_15_00(000)_Neural Statistics Compiler(000).csv
+L:/Lab/NHEERL_MEA/MAESTRO SYSTEM/ToxCast Compounds/Phase I and II Con Response/Experiment Date/6-2-16/Burst Analysis/Network Burst Data/TC_MW 1060-34_20160518_20160602_15_00(000)_Neural Statistics Compiler(000).csv

@@ -1,0 +1,3 @@
+experiment.date,plate.id,rowi,coli,treatment,spid,conc,wllq_notes,endpoints,srcf
+20190924,MW69-3910,2,1,Water,Water,0.001,Baseline MFR > 3.4036511 Hz; ,mea,AC_20190911_MW69-3910_13_00(000)(000).csv;AC_20190911_MW69-3910_13_01(001)(000).csv
+20190924,MW69-3910,4,2,Loperamide,EX000411,0.03,rval is Inf; ,mea,AC_20190911_MW69-3910_13_00(000)(000).csv;AC_20190911_MW69-3910_13_01(001)(000).csv

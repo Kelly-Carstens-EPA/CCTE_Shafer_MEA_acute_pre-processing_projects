@@ -1,0 +1,215 @@
+---
+title: "MEA Acute Investigations"
+author: "Amy Carpenter"
+date: "12/17/2021"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    number_sections: true
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(ggplot2)
+library(plotly)
+```
+
+# Questions to consider
+
+Thoughts from recent conversations (12/15/2021):
+
+* Review why Katie pushed to normalize: To make the y-axis of the resp more meaningful and consistent across endpoints.
+* We discussed the fact that the current normalization is resp := cval - bval. Which doesn't really make sense - it's intended for cval's on a log scale.
+* Katie proposed that we simply normalize with pval = 0 and resp.pc. 
+* However, this is probablematic because many/most of the bval's are very close to 0.
+* So, we could try applying a level 2 correction to vertically shift the cval's so that the bval's aren't at 0.
+* I'm feeling hesitant
+* BUT, the reason we are concerned about the MEA Acute normalization is because of the really bad bvals! (i.e., the cases where the median DMSO rval is close to -100!).
+* What if we use only the first and second lowest concentrations tested, and NOT the DMSO, to calculate the bvals?
+  * (Not because there is anything wrong with DMSO, but just bc of the edge well effect)
+
+Game plan:
+
+* Start by seeing if just the 2 lowest conc's median is generally better than the DMSO only. 
+  * Why doing this first: I think this will remain an issue/question regardless of how we update the normalization method
+* Then play around with other normalization methods (e.g. vertical shift at level 2 so that no bval's are 0, followed by resp.pc. Or other ideas, like the 99th percentile? Esp thinking ahead to tpclFit2)
+  * Why not okay with current norm method, even if we have better bvals: the cval - bval method was intended for values on a log scale. It's too hacky/non-standard/I don't really know the implications
+
+
+# Prepare data
+
+```{r}
+load('lvl0_snapshots/mea_acute_lvl0_2020-07-29.RData')
+
+# filter out wllq == 0
+dat <- mea_acute_lvl0[wllq == 1]
+rm(mea_acute_lvl0)
+
+# assign the cndx
+dat[, conc := signif(conc, 3)]
+dat[is.na(conc), .N, by = .(wllt, spid)] # this is all fine
+dat[, cndx := frank(conc, ties.method = 'dense'), by = .(apid, spid, wllt, srcf, apid)] # dense will collapse the rep's
+
+# Calculate the bvals
+dat[wllt == 'n', .N, by = spid] # most DMSO, some water, no Media
+dat[, bval.n2low := median(rval[wllt == 'n' | (wllt == 't' & cndx %in% c(1,2))], na.rm = T), by = .(acnm, apid)]
+dat[, bval.2low := median(rval[(wllt == 't' & cndx %in% c(1,2))], na.rm = T), by = .(acnm, apid)]
+dat[, bval.n := median(rval[wllt == 'n'], na.rm = T), by = .(acnm, apid)]
+
+  
+```
+
+# Compare the bvals
+
+```{r}
+
+# Questions:
+# - How does the bval of 2 low only compare to bval of n and 2 low?
+#   Is either consistently lower or higher?
+#   Is the tail of either thicker or thinner? (e.g. at least fewer really low balls with 2 low only?)
+
+# Another question:
+# should we just filter out edgewells?
+
+# Start with the classic wmfr
+acnmi <- 'CCTE_Shafer_MEA_acute_firing_rate_mean_weighted'
+ggplot(dat[acnm == acnmi], aes(x = bval.n2low, y = bval.2low)) +
+  geom_point()+
+  geom_abline(slope = 1, intercept = 0)+
+  ggtitle(paste0(acnmi,'\nBval of 2 Lowest conc\'s only vs\nBval of n wells + 2 lowest conc\'s'))
+
+```
+
+Observations:
+
+* Generally these bval's are not all that different
+* For some of the lowest bval's, the bval of 2 low only is just as bad/in some cases slighlty worse
+* This component also just doesn't have a ton of REALLY bad bval's (of n and 2low)
+
+Let's check out another endpoint, one that has some low bval's
+
+```{r}
+dat[, .(median(bval.n2low)), by = .(acnm)][order(V1)]
+
+acnmi <- 'CCTE_Shafer_MEA_acute_cross_correlation_area'
+ggplot(dat[acnm == acnmi], aes(x = bval.n2low, y = bval.2low)) +
+  geom_point()+
+  geom_abline(slope = 1, intercept = 0)+
+  ggtitle(paste0(acnmi,'\nBval of 2 Lowest conc\'s only vs\nBval of n wells + 2 lowest conc\'s'))
+
+
+```
+
+Oh wow, even here it's not really any better!!
+
+How to quickly visually verify that for all endpoints the bval of 2 low only isn't really any better?
+
+Not sure, but let's do a quick t-test
+
+```{r}
+# Get a table with 1 row per apid
+bval.tb <- dat[, unique(.SD), .SDcols = c('acnm','apid','bval.n2low','bval.2low')]
+t.test.tb <- data.table()
+for (acnmi in unique(dat$acnm)) {
+  res <- t.test(x = bval.tb[acnm == acnmi, bval.n2low],
+                y = bval.tb[acnm == acnmi, bval.2low],
+                alternative = 'two.sided',
+                mu = 0, 
+                paired = TRUE,
+                var.equal = FALSE)
+  add.tb <- data.table(acnm = acnmi,
+                       statistic = res$statistic,
+                       parameter = res$parameter,
+                       p.value = res$p.value,
+                       conf.int.lb = res$conf.int[1],
+                       conf.int.ub = res$conf.int[2],
+                       mean_of_the_differences = res$estimate[1])
+  t.test.tb <- rbind(t.test.tb, add.tb)
+}
+
+t.test.tb
+
+p <- ggplot(t.test.tb[!grepl('(LDH)|(AB)',acnm)], aes(text = acnm, x = mean_of_the_differences, y = p.value)) +
+  geom_point()+
+  scale_y_log10()+
+  geom_hline(yintercept = 0.05)+
+  ggtitle(paste0('Welch Two Sample Paired t-test of bval of n wells + 2 low concs vs bval of 2 low concs only\nfor the\n ',nrow(t.test.tb[!grepl('(LDH)|(AB)',acnm)]),' MEA Acute components'))
+plotly::ggplotly(p, tooltip = 'all')
+
+```
+
+* Only 6/43 are statistically significant (with no FDR corrections)
+* The magnitude of the mean of the differences seems rather small to me (only about 2% increase on average.. this is not the level of change that we need)
+* BUT, this is averaged over all plates -> so let's check it out by plate instead, to see if we get an improvement for the plates that need it, and no change for the ones that don't
+
+# T-test by apid
+
+```{r}
+
+# Do some ranking of the apids
+use.bval.tb <- bval.tb[!grepl('(LDH)|(AB)',acnm)]
+use.bval.tb[, apid_rank_in_acnm := frank(bval.n2low, ties.method = 'average'), by = .(acnm)]
+use.bval.tb[, apid_med_rank := median(apid_rank_in_acnm), by = .(apid)]
+use.bval.tb[, apid_min_rank := min(apid_rank_in_acnm), by = .(apid)]
+use.bval.tb[, apid_med_bval.n2low := median(bval.n2low), by = .(apid)]
+use.bval.tb[, apid_min_bval.n2low := min(bval.n2low), by = .(apid)]
+
+
+apid.t.test.tb <- data.table()
+for (apidi in unique(dat$apid)) {
+  res <- t.test(x = use.bval.tb[apid == apidi, bval.n2low],
+                y = use.bval.tb[apid == apidi, bval.2low],
+                alternative = 'two.sided',
+                mu = 0, 
+                paired = TRUE,
+                var.equal = FALSE)
+  add.tb <- data.table(apid = apidi,
+                       statistic = res$statistic,
+                       parameter = res$parameter,
+                       p.value = res$p.value,
+                       conf.int.lb = res$conf.int[1],
+                       conf.int.ub = res$conf.int[2],
+                       mean_of_the_differences = res$estimate[1])
+  apid.t.test.tb <- rbind(apid.t.test.tb, add.tb)
+}
+apid.t.test.tb <- merge(apid.t.test.tb, 
+                        use.bval.tb[, unique(.SD), .SDcols = c('apid','apid_med_rank','apid_min_rank',
+                                                               'apid_med_bval.n2low','apid_min_bval.n2low')],
+                        by = 'apid', all.x = T)
+apid.t.test.tb
+
+p <- ggplot(apid.t.test.tb, aes(text = apid, x = apid_min_rank, y = p.value)) +
+  geom_point(aes(color = mean_of_the_differences))+
+  scale_y_log10()+
+  geom_hline(yintercept = 0.05)+
+  ggtitle(paste0('Welch Two Sample Paired t-test of\nbval of n wells + 2 low concs vs bval of 2 low concs only\nfor the ',nrow(t.test.tb[!grepl('(LDH)|(AB)',acnm)]),' MEA Acute components'))
+plotly::ggplotly(p, tooltip = 'all')
+```
+
+* So where the mean of the differences is statistically significant, the min rank of the apid amongst other apid by acnm is on the low end (>= 15 / 99 apid).
+* BUT, there are still plenty of apid with a min rank < 15 that don't have a signficant difference.
+
+What if I check it out by just the raw min bval, rather than the basing it on the rank, which doesn't actually tell me if the apid is concerningly low?
+
+```{r}
+p <- ggplot(apid.t.test.tb, aes(text = apid, x = apid_min_bval.n2low, y = p.value)) +
+  geom_point(aes(color = mean_of_the_differences))+
+  scale_y_log10()+
+  geom_hline(yintercept = 0.05)+
+  ggtitle(paste0('Welch Two Sample Paired t-test of\nbval of n wells + 2 low concs vs bval of 2 low concs only\nfor the ',nrow(t.test.tb[!grepl('(LDH)|(AB)',acnm)]),' MEA Acute components'))
+plotly::ggplotly(p, tooltip = 'all')
+```
+
+
+Sad, the apid with the smallest min bvals are still not really helped by using 2low only (at least, on average).
+
+Maybe doing the t-test and looking at this aggregate level is not really helpful?
+
+
+# Picking this up
+
+* I still don't think I have answered the question of whether using the 2 lowest concentrations only would eliminate some of/most of the really bad bval's based on DMSO + 2 lowest conc's (and not bring down the bval for other apid). So keep pressing in to that. 
+  * Perhaps target specific plates a bit more? e.g. wherever Tetrabutylammonium bromide was tested, for burst number -> DMSO was looking pretty rough. Or for Saccharin.

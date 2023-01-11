@@ -1,0 +1,4 @@
+(last updated Dec 9, 2022)
+
+NOTE:
+Before pipelining any new data, review the relevant OneNote notebook page in the pre-processing lab notebook to confirm there are no outstanding to-do items!!
