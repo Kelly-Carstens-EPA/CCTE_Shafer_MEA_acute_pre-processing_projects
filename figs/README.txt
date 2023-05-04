@@ -1,1 +1,0 @@
-mean_firing_rate_distribution_baseline_2020-05-18.pdf shows the data from DNT2019, ToxCast2016, and APCRA2019, with 8 files removed from teh ToxCast data set that were not named conveniently. Each bin is 10 spikes per min. Only basline recording values are included.
