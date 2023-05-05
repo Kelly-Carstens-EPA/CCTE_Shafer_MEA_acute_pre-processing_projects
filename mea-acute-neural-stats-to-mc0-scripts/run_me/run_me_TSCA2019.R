@@ -25,21 +25,29 @@ library(stringi)
 
 # set up folders and working directory
 if (!dir.exists(file.path(root_output_dir,dataset_title))) dir.create(file.path(root_output_dir,dataset_title))
-setwd(file.path(root_output_dir,dataset_title))
+# setwd(file.path(root_output_dir,dataset_title))
 main.output.dir <- getwd()
 if (!dir.exists(file.path(main.output.dir,"output"))) dir.create(file.path(main.output.dir,"output"))
 
 # source all functions in folder 'mea-acute-neural-stats-to-mc0-scripts'
-scripts <- list.files(path = "../mea-acute-neural-stats-to-mc0-scripts", pattern = "\\.R$", full.names = T, recursive = F)
+scripts <- list.files(path = "mea-acute-neural-stats-to-mc0-scripts", pattern = "\\.R$", full.names = T, recursive = F)
 sapply(scripts, source)
 
 # loading acsn_acnm map
+<<<<<<< HEAD
 acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv"), stringsAsFactors = F))
+=======
+acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv")))
+>>>>>>> master
 acsn_map <- acsn_map[, .(acsn, acnm)]
 
 # Just want to get a list of all cultures in the main folder
 main.folders <- list.files(path = 'L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response', pattern = '[0-9]{8}', include.dirs = T)
 cat(main.folders, sep ='\n')
+wb <- createWorkbook()
+addWorksheet(wb, 'TSCA cultures')
+writeData(wb, 1, data.table('culture_folders' = main.folders))
+saveWorkbook(wb, file = 'TSCA2019/tables/TSCA2019_culture_folders_to_review.xlsx')
 
 # How differentiate between treated and controls with this naming convention?
 
@@ -172,6 +180,7 @@ tryCatch(writeCheckSummary(main.output.dir, dataset_title),
 
 # extract all of the data from the files and transform into long data format (dat1)
 extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
+<<<<<<< HEAD
 
 # Troubleshooting an error: 
 # get the files from the files_log that are not already in dat1
@@ -310,6 +319,8 @@ dat1[, multiple_unique_ranks :=
 
 
 
+=======
+>>>>>>> master
 # OUTPUT --------------------------------------------------------- 
 # Level 1 - Extract All Data:
 #   

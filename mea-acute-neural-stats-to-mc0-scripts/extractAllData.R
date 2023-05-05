@@ -35,7 +35,15 @@ extractAllData <- function(output.dir, dataset_title, run.type.tag.location, app
   cat("\nReading data from files...\n")
   newdat <- list()
   for (i in 1:length(new_files)) {
+<<<<<<< HEAD
     add.dat <- fileToLongdat(new_files[i], run.type.tag.location[i], plate.id.tag.location = plate.id.tag.location, guess_run_type_later = guess_run_type_later)
+=======
+    add.dat <- tryCatch(fileToLongdat(new_files[i], run.type.tag.location[i], plate.id.tag.location = plate.id.tag.location, guess_run_type_later = guess_run_type_later),
+                        error = function(e) {
+                          warning(paste0(e))
+                          return(data.table())
+                        })
+>>>>>>> master
     newdat <- rbind(newdat, add.dat)
     rm(add.dat)
   }
@@ -47,4 +55,11 @@ extractAllData <- function(output.dir, dataset_title, run.type.tag.location, app
   save(dat1, file = outfile)
   cat("\n",basename(outfile), " is ready.\n",sep="")
   
+<<<<<<< HEAD
+=======
+  # print summary of wllq changes
+  cat("Summary of dates/plates with wllq=0 at Level 1:\n")
+  print(dat1[wllq == 0, .(wllq_set_to_zero = paste0(sort(unique(well)),collapse=",")), by = c("experiment.date","plate.id")][order(experiment.date, plate.id)])
+  
+>>>>>>> master
 }

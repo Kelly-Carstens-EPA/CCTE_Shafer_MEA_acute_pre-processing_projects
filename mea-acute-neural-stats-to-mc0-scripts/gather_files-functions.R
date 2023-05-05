@@ -61,7 +61,11 @@ writeLogFile <- function(file_names, output.dir, dataset_title, files_type) {
 }
 
 
+<<<<<<< HEAD
 read_files <- function(check.dir, files_log = "", files_type = "neural_stats") {
+=======
+read_files <- function(check.dir = "", files_log = "", files_type = "neural_stats") {
+>>>>>>> master
   
   if (files_log == "") {
     # read the data from the most recent files_log in check.dir

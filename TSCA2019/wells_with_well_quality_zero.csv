@@ -1,0 +1,23 @@
+experiment.date,plate.id,well,wllq,wllq_notes,source,affected_endpoints
+20210429,MW71-8114,H1,0,"Had insufficient substrate to have 3 full Lysis wells; which of the 3 labelled ""Lysis"" wells on plate that did not contain Lysis was not recorded",lab notebook,LDH
+20210429,MW71-8114,H2,0,"Had insufficient substrate to have 3 full Lysis wells; which of the 3 labelled ""Lysis"" wells on plate that did not contain Lysis was not recorded",lab notebook,LDH
+20210429,MW71-8114,H3,0,"Had insufficient substrate to have 3 full Lysis wells; which of the 3 labelled ""Lysis"" wells on plate that did not contain Lysis was not recorded",lab notebook,LDH
+,MW75-8004,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-8205,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-8206,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-8219,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9101,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9102,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9103,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9104,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9105,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9106,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9107,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9108,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9109,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9110,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW80-1501,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW78-6202,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW78-6203,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW78-6204,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"
+,MW75-9114,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook,"mea,LDH,CTB"

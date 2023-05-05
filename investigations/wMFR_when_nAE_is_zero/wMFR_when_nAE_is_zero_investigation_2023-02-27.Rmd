@@ -1,0 +1,76 @@
+---
+title: "wMFR when nAE is zero investigation"
+output: 
+  html_document:
+    toc: true
+    df_print: paged
+    code_folding: hide
+date: "2023-02-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(ggplot2)
+```
+
+# MOtivation
+
+Jackson found that the wMFR is NA for several cases with the fish studies where the nAE is zero. We woudl think it should be zero... so there is a bit of a disconnect there.
+
+Tim wanted to know how we processed the data.
+
+# Investigate
+
+Get all loaded dat1
+
+```{r}
+source('mea-acute-neural-stats-to-mc0-scripts/get_latest_dat.R')
+dat1 <- get_latest_dat(lvl = 'dat1', dataset_titles = c( "ToxCast2016", "APCRA2019","DNT2019","GF2019"))
+dat1[, nAE := activity_value[acnm == 'CCTE_Shafer_MEA_acute_active_electrodes_number'],
+     by = .(apid, plate.id, rowi, coli, run_type)]
+plotdat <- dat1[grepl('firing_rate_mean_weighted',acnm)]
+
+plotdat[nAE == 0, summary(activity_value)]
+plotdat$nAE <- factor(plotdat$nAE, levels = sort(unique(plotdat$nAE)))
+plotdat[, .N, by = .(nAE)]
+
+ggplot(plotdat, aes(x = nAE, y = activity_value))+
+  geom_jitter(height = 0, width = 0.2)
+
+ggplot(plotdat, aes(x = activity_value))
+  
+dat1[grepl('firing_rate_mean_weighted',acnm) & nAE == 0, .(.N,
+                                                           .N/nrow(dat1[grepl('firing_rate_mean_weighted',acnm) & nAE == 0])),
+     by = .(wMFR_is_NA = is.na(activity_value),
+                                                                    wMFR_is_zero = activity_value == 0)]
+#    wMFR_is_NA wMFR_is_zero   N
+# 1:      FALSE         TRUE 788
+# 2:       TRUE           NA 407
+dat1[grepl('firing_rate_mean_weighted',acnm) & nAE == 0, .N, by = .(wMFR_is_NA = is.na(activity_value),
+                                                                    wMFR_is_zero = activity_value == 0,
+                                                                    run_type)]
+
+nrow(dat1[, .N, by = .(apid, plate.id, rowi, coli, run_type)])
+```
+
+
+What do we do with the rval in the NA cases?
+
+```{r}
+load('lvl0_snapshots/dat4_2020-07-29.RData')
+id.rows2 <- dat1[nAE == 0 & grepl('firing_rate_mean_weighted',acnm) & is.na(activity_value),
+                 .(apid, plate.id, rowi, coli, acnm)]
+setkey(id.rows2, apid, plate.id, rowi, coli, acnm)
+setkey(dat4, apid, plate.id, rowi, coli, acnm)
+dat4[.(id.rows2), .N, by = .(wllq, wllq_notes)]
+```
+
+So looks like we set the the wllq to 0 if the rval is NA
+
+Culture dates covered?
+
+```{r}
+dat1[, summary(as.numeric(experiment.date))]
+```
+

@@ -2,3 +2,6 @@
 
 NOTE:
 Before pipelining any new data, review the relevant OneNote notebook page in the pre-processing lab notebook to confirm there are no outstanding to-do items!!
+
+(April 7, 2023)
+Make sure that the nAE and nABE are run with bidirectional = FALSE with tcpl_v3

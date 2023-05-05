@@ -109,6 +109,8 @@ fileToLongdat <- function(filei, run.type.tag.location,
   analysis_duration <- headdat[grepl("Analysis Duration",file_col1), as.numeric(file_col2)]
   setting_min.num.spks.network.burst <- headdat[grepl("Minimum Number of Spikes \\(network bursts\\)",file_col1), as.numeric(file_col2)]
   setting_axis.version <- headdat[grepl("AxIS Version",file_col1), paste0(unique(file_col2),collapse=",")]
+  original_file_time <- headdat[grepl("Original File Time",file_col1), as.character(file_col2)]
+  exp_start_time <- headdat[grepl("Experiment Start Time",file_col1), as.character(file_col2)]
   
   if (include.all.settings) {
     
