@@ -207,15 +207,15 @@ runChecks <- function(files, check.settings = F, check.parameters = T, check.tim
               "timing_summary" = timing_summary))
 }
 
-writeCheckSummary <- function(output.dir, dataset_title, check.settings = F, check.parameters = T, check.timing = T,
+writeCheckSummary <- function(dataset_title, check.settings = F, check.parameters = T, check.timing = T,
                               run_without_sink = FALSE) {
   
-  check_summary_file <- paste0(output.dir, "/",dataset_title,"_check_summary_",as.character.Date(Sys.Date()),".txt")
+  check_summary_file <- paste0(dataset_title,"_check_summary.txt")
   if(!run_without_sink) sink(check_summary_file)
   cat("Created with the script check-functions.R, writeCheckSummary() on",as.character.Date(Sys.Date()),sep = " ")
   
-  # will read from the files_log in output.dir, as well as create the check_summary file in output.dir
-  files <- read_files(check.dir = output.dir)
+  # will read from the files_log in  as well as create the check_summary file in output.dir
+  files <- read_files(dataset_title)
   
   # do the checks
   check.results <- runChecks(files, check.settings, check.parameters, check.timing)

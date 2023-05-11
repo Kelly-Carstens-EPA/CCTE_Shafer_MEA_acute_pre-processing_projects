@@ -1,12 +1,12 @@
 # script to gather the wanted mea acute files
 
-selectInputFiles <- function(start.dir, output.dir, dataset_title = "", files_type = "neural_stats", append = FALSE){
+selectInputFiles <- function(start.dir, dataset_title, files_type = "neural_stats", append = FALSE){
   
   # get starting folder, to initialize starting screen
   culture.dirs <- list.dirs(path = start.dir, recursive = F)
   
   if (append) {
-    file_names <- read_files(check.dir = output.dir, files_type = files_type)
+    file_names <- read_files(dataset_title, files_type = files_type)
   } else {
     file_names <- c()
   }
@@ -27,13 +27,13 @@ selectInputFiles <- function(start.dir, output.dir, dataset_title = "", files_ty
   # just in case any files were selected twice
   file_names <- unique(file_names)
   
-  writeLogFile(file_names, output.dir, dataset_title, files_type = files_type)
+  writeLogFile(file_names, dataset_title, files_type)
 }
 
-writeLogFile <- function(file_names, output.dir, dataset_title, files_type) {
+writeLogFile <- function(file_names, dataset_title, files_type) {
   
   # create log file name
-  log_file <- file.path(output.dir, paste0(dataset_title, "_",files_type,"_files_log_",as.character.Date(Sys.Date()),".txt"))
+  log_file <- file.path(dataset_title, paste0(dataset_title, "_",files_type,"_files_log.txt"))
   
   # create the log file
   sink(file = log_file, append = F)
@@ -61,21 +61,18 @@ writeLogFile <- function(file_names, output.dir, dataset_title, files_type) {
 }
 
 
-<<<<<<< HEAD
-read_files <- function(check.dir, files_log = "", files_type = "neural_stats") {
-=======
-read_files <- function(check.dir = "", files_log = "", files_type = "neural_stats") {
->>>>>>> master
+read_files <- function(dataset_title, files_type = "neural_stats") {
   
-  if (files_log == "") {
-    # read the data from the most recent files_log in check.dir
-    files_logs <- list.files(path = check.dir, pattern = paste0(files_type,"_files_log_"), recursive = F, full.names = T)
-    files_log <- files_logs[order(basename(files_logs), decreasing = T)[1]] # get the most recent log file
+  files_log <- list.files(dataset_title, pattern = paste0(files_type,"_files_log"), recursive = F, full.names = T)
+  # (to accommodate older formats when I wasn't relying on version control)
+  if (length(files_log) > 1) {
+      files_log <- files_log[order(basename(files_log), decreasing = T)[1]] # get the most recent log file  stopifnot(length(files_log) == 1)  
   }
   
-  # send the name of files_log to the environ where read_files was called so that the chosen files_log can be documented
-  assign("files_log",files_log, envir = parent.frame())
-
+  if (length(files_log) == 0) {
+    cat('\nNo files_log present')
+    return(c())
+  }
   cat("\nReading from ",basename(files_log),"...",sep="")
   
   # function to read the files from the log file

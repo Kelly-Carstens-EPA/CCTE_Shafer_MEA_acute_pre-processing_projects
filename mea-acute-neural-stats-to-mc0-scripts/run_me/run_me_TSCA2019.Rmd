@@ -1,221 +1,245 @@
-rm(list = ls())
-###################################################################################
-# USER INPUT
-###################################################################################
-start.dir <- "L:/Lab/NHEERL_MEA/TSCA2019/Acute TSCA Conc Response"
-dataset_title <- "TSCA2019" # e.g. "name2020"
-select.neural.stats.files <- F # select new neural stats files, or use the files in the most recent neural_stats_files_log?
-select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
-run.type.tag.location <- 5 # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
-spidmap_file <- ""
-use_sheet <- "" # sheet name in spidmap_file
-# optional adjutsment; usually can use defaults:
-root_output_dir <- "L:/Lab/NHEERL_MEA/Carpenter_Amy/pre-process_mea_acute_for_tcpl" # where the dataset_title folder will be created
-override_wllq_checks <- FALSE # set to TRUE only if you have already verified your wllq updates
-plate.id.tag.location <- numeric(0) # only update this if you have to, if your dataset does not include plate.id.tag in file headers
-noisy_functions <- TRUE
-standard_analysis_duration_requirement <- TRUE # default should be true
-###################################################################################
-# END USER INPUT
-###################################################################################
+---
+title: 'Pre-process TSCA2019 MEA Acute data'
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: hide
+    df_print: paged
+date: "May 11, 2023"
+---
 
+# Set up
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+rm(list = ls())
 library(data.table)
 library(openxlsx)
 library(stringi)
 
-# set up folders and working directory
-if (!dir.exists(file.path(root_output_dir,dataset_title))) dir.create(file.path(root_output_dir,dataset_title))
-# setwd(file.path(root_output_dir,dataset_title))
-main.output.dir <- getwd()
-if (!dir.exists(file.path(main.output.dir,"output"))) dir.create(file.path(main.output.dir,"output"))
+print(sessionInfo())
+```
+
+
+# User-defined variables
+
+```{r}
+start.dir <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response"
+dataset_title <- "TSCA2019" # e.g. "name2020"
+select.neural.stats.files <- T # select new neural stats files, or use the files in the most recent neural_stats_files_log?
+select.calculations.files <- T # select new calculations files, or use the files in the most recent calculations_files_log?
+run.type.tag.location <- NULL # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
+spidmap_file <- ""
+use_sheet <- "" # sheet name in spidmap_file
+
+# optional adjutsment; usually can use defaults:
+override_wllq_checks <- FALSE # set to TRUE only if you have already verified your wllq updates
+plate.id.tag.location <- numeric(0) # only update this if you have to, if your dataset does not include plate.id.tag in file headers
+noisy_functions <- TRUE
+standard_analysis_duration_requirement <- TRUE # default should be true
+```
+
+
+Set up folders and working directory
+```{r}
+if (!dir.exists(file.path(dataset_title))) dir.create(file.path(dataset_title))
+if (!dir.exists(file.path(dataset_title,"output"))) dir.create(file.path(dataset_title,"output"))
 
 # source all functions in folder 'mea-acute-neural-stats-to-mc0-scripts'
 scripts <- list.files(path = "mea-acute-neural-stats-to-mc0-scripts", pattern = "\\.R$", full.names = T, recursive = F)
 sapply(scripts, source)
 
 # loading acsn_acnm map
-acsn_map <- as.data.table(read.csv(file.path(root_output_dir,"neural_stats_acsn_to_tcpl_acnm_map.csv")))
+acsn_map <- as.data.table(read.csv(file.path("neural_stats_acsn_to_tcpl_acnm_map.csv")))
 acsn_map <- acsn_map[, .(acsn, acnm)]
+```
 
+# Level 0 - Gather and Check Files
+
+## Read any .txt files with important notes
+
+Scan for readme's that might affect dosing, wllq
+
+```{r}
+txt.files <- list.files(start.dir, pattern = '\\.txt', recursive = T, full.names = T)
+readmes <- txt.files[grepl('read( )*me',tolower(txt.files))]
+if (length(readmes) > 0) {
+  for (i in 1:length(readmes)) {
+    cat(i,'\n')
+    cat(dirname(readmes[i]),'\n')
+    cat(scan(readmes[i], what = character(), sep = '\n', quiet = T), sep = '\n')
+    cat('\n')
+  }
+} else {
+  cat('no readme.txt files')
+}
+# 1 
+# L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210526 Culture G26 (201B07, 201C02, 201C03 may need repeat) 
+# Plate 1 CellTiter Blue blank control is not valid
+# blank values are taken from plate 2 blank controls
+```
+
+5/11/23: Seline has already updated the formula in the Calculations file such that the corrected optical density values for plate 1 are corrected to the blanks from plate 2. No further updates needed.
+
+Check for any other .txt files that look relevant
+```{r}
+cat('other txt files:\n')
+cat(setdiff(txt.files,readmes), sep = "\n")
+# (if there are any other txt files that look like they might have relevant notes, review the contents of those files as well)
+```
+
+
+## Get list culture folders to review
+
+Get a list of all cultures in the main folder to check off as I review wllq notes in lab notebook and determine usability.
+
+`eval = FALSE` because I only need to run this once
+
+```{r eval = FALSE}
 # Just want to get a list of all cultures in the main folder
-main.folders <- list.files(path = 'L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response', pattern = '[0-9]{8}', include.dirs = T)
-cat(main.folders, sep ='\n')
+group.folders <- list.files(path = start.dir, pattern = '[0-9]{8}', include.dirs = T)
+cat(group.folders, sep ='\n')
 wb <- createWorkbook()
 addWorksheet(wb, 'TSCA cultures')
-writeData(wb, 1, data.table('culture_folders' = main.folders))
+writeData(wb, 1, data.table('culture_folders' = group.folders))
 saveWorkbook(wb, file = 'TSCA2019/tables/TSCA2019_culture_folders_to_review.xlsx')
+```
 
-# How differentiate between treated and controls with this naming convention?
+## Get list of neural stats and meta data files to use
 
-
+```{r}
 cat(paste0(dataset_title, " MEA Acute TCPL Level 0 Data Prep Running Log\nDate: ",as.character.Date(Sys.Date()),"\n"))
-cat("\nLevel 0 - Gather and Check Files:\n")
 
-# Scan for readme's that might affect dosing, wllq
-txt.files <- list.files(path = start.dir, pattern = '\\.txt', recursive = T, full.names = T)
-readmes <- txt.files[grepl('read( )*me',tolower(txt.files))]
-for (readme in readmes) {
-  cat(dirname(readme),'\n')
-  cat(scan(readme, what = character(), sep = '\n', quiet = T), sep = '\n')
-  cat('\n')
-}
-# empty - no readme's to check
+# For each culture, get all files under "Neural Statistic Compiler" folder
+# if there are not exactly 6 files per folder -> flag (including if there are just 0)
+group.folders <- list.files(path = start.dir, 
+                            pattern = '[0-9]{8}',
+                            include.dirs = T,
+                            full.names = T)
+print(basename(group.folders))
+# (edit the list of group folders to include if necessary)
+```
 
-# select input files to use, store files in .txt file
+Looks okay!
+
+Select input files to use, store files in .txt file
+```{r}
 if (select.neural.stats.files) {
-  selectInputFiles(start.dir, main.output.dir, dataset_title, files_type = "neural_stats")
   
-  # Using a new method to select files instead
-  # for each culture, get all files under "Neural Statistic Compiler" folder
-  # if there are not exactly 6 files per folder -> flag (including if there are just 0)
-  neural.stats.files <- c()
-  for (folderi in main.folders) {
-    add.files <- list.files(path = file.path('L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response',folderi,'Neural Statistic Compiler'), pattern = '\\.csv', full.names = T,
-                            recursive = T)
-    neural.stats.files <- c(neural.stats.files, add.files)
-  }
-  length(neural.stats.files) # 255
+  # Use below lines of code to get all files in folder "Neural Statistic Compiler" for each group
+  # Or, if project is not cleanly organized, use below function to cycle through 
+  # folders in project and manually select files using the 'choose.files' window interface
+  # selectInputFiles(start.dir, dataset_title, files_type = "neural_stats")
   
-  # any cultures not match any files?
-  neural.stats.files.folders <- basename(dirname(dirname(neural.stats.files)))
-  setdiff(main.folders, neural.stats.files.folders)
-  # empty -> good
+  # Get all neural stats files in folder
+  neural.stats.files <- sapply(group.folders, 
+                               function(folderi) list.files(path = file.path(folderi,
+                                                                             'Neural Statistic Compiler'), 
+                                                            pattern = '\\.csv', 
+                                                            full.names = T,
+                                                            recursive = T))
   
-  # Any cultures not match exactly 6 files?
-  counts <- table(neural.stats.files.folders)
-  counts[counts != 6]
-  # neural.stats.files.folders
-  # 20201125 Culture G2 20210512 Culture G24 (200H02 may need repeat) 
-  #                   8                                             7
+  # Check that there are exactly 6 neural stats files per group
+  # (1 baseline and 1 treated X 3 plates)
+  num.files.per.group <- lapply(neural.stats.files, length)
+  cat('Groups that did not match exactly 6 neural stats files:')
+  num.files.per.group[num.files.per.group != 6]
   
-  # 20201125 - this is because of the issue with the break in recording
-  # I'm guessing that the file labelled "treated" is the attempt to calculate the averaged values
-  # However, the "treated" file is slighlty problematic for 2 reasons:
-  # - it doesn't contain any parameter data in the header
-  # - I don't understand how the values were calculated from the other 2 files 
-  #   (doesn't quite line up with sums, averages or time-weighted averages as I would guess)
-  # So I have created a version of a consensus file that I will use instead
-  neural.stats.files <- neural.stats.files[!basename(neural.stats.files) %in% c('AC_20201125_MW71-7113_13_00(001)(000).csv','AC_20201125_MW71-7113_13_00(002)(001).csv')]
+  # (edit the list of neural.stats.files if needed)
   
-  # 20210512 - there are 3 files for 75-8213
-  # Looking at AC_20210512_MW75-8213_13_35(001)(000).csv, it only contains a few rows of data, with none of the usual headers
-  # Is not usable in current state, will assume that the 002 version if what we want
-  neural.stats.files <- neural.stats.files[!basename(neural.stats.files) %in% c('AC_20210512_MW75-8213_13_35(001)(000).csv')]
+  # Exclude 20201127_MW71-7113 (because treated recording broken up), for now (will investigate Seline's methods to combine and if I agree if time later)
+  # Similar situation for G24, plate 75-8213 
+  neural.stats.files <- sapply(neural.stats.files,
+                               function(files) files[!grepl('20201125_MW71-7113',files)])
+  neural.stats.files <- sapply(neural.stats.files,
+                               function(files) files[!grepl('20210512_MW75-8213',files)])
+  num.files.per.group <- lapply(neural.stats.files, length)
   
-  # REcheck
-  neural.stats.files.folders <- basename(dirname(dirname(neural.stats.files)))
-  counts <- table(neural.stats.files.folders)
-  counts[counts != 6] #empty, good
+  # Final check:
+  # stopifnot(sum(num.files.per.group != 6) == 0)
+  # (removing this check because there are 2 groups with 1 plate removed)
+  # (so I'll just confirm that there are an even # of files per group)
+  stopifnot(sum(unlist(num.files.per.group) %% 2) == 0)
   
   # Write files to log
-  current.neural.files <- read_files(main.output.dir, files_type = 'neural_stats')
-  setdiff(basename(current.neural.files), basename(neural.stats.files))
-  # empty -> so there is nothign that I selected previously that I have not included
-  writeLogFile(neural.stats.files, main.output.dir, dataset_title, files_type = 'neural_stats')
+  writeLogFile(unlist(neural.stats.files), dataset_title, files_type = 'neural_stats')
   
 }
+```
 
-
+Select calculations files
+```{r}
 if (select.calculations.files) {
-  # selectInputFiles(start.dir, main.output.dir, dataset_title, files_type = "calculations")
   
-  # Using new method:
+  # Use below lines of code to get files in group folders that contain the phrase "Calculations"
+  # Or, if project is not cleanly organized, use below function to cycle through 
+  # folders in project and manually select files using the 'choose.files' window interface
+  # selectInputFiles(start.dir, dataset_title, files_type = "calculations")
   
-  # Get cyto files (need plate maps)
-  calc.files <- c()
-  for (folderi in main.folders) {
-    add.files <- list.files(path = file.path('L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response',folderi), pattern = '\\.xlsx', full.names = T,
-                            recursive = F)
-    calc.files <- c(calc.files, add.files)
-  }
-  # Remove the dummy "ghost" files
-  calc.files <- Filter(f = function(x) !grepl('\\~\\$',basename(x)), calc.files)
-  length(calc.files) # 37
+  # Get all calculations files in folder
+  calc.files <- sapply(group.folders, 
+                       function(folderi) list.files(path = file.path(folderi), 
+                                                    pattern = 'Calculations', 
+                                                    full.names = T,
+                                                    recursive = F))
   
-  # any cultures not match any files?
-  calc.files.folders <- basename(dirname(calc.files))
-  setdiff(main.folders, calc.files.folders)
-  # empty -> good
+  # Remove any dummy "ghost" files
+  calc.files <- sapply(calc.files,
+                       function(files) files[!grepl('\\~\\$',basename(files))])
   
-  # Any cultures not more than 1 file?
-  counts <- table(calc.files.folders)
-  counts[counts != 1] # empty!
+  # Check that there is exactly 1 calc file per group
+  num.files.per.group <- lapply(calc.files, length)
+  cat('Groups that did not match exactly 1 Calculations file:')
+  num.files.per.group[num.files.per.group != 1]
   
-  current.calc.files <- read_files(main.output.dir, files_type = 'calculations')
-  # error -> there is no calc file currently
-  # setdiff(basename(current.calc.files), basename(calc.files))
-  writeLogFile(calc.files, main.output.dir, dataset_title, files_type = 'calculations')
+  # (edit the list of calc.files if needed)
+  
+  # Final check:
+  stopifnot(sum(num.files.per.group != 1) == 0)
+  
+  # Write files to log
+  writeLogFile(unlist(calc.files), dataset_title, files_type = 'calculations')
   
 }
+```
 
 
-# Check that at run.type.tag.location, there is one file with  _00 and 1 file with _01 for each plate
-# this is a fallable check, thought, bc the plate or date names may be incorrect in the file names
-run.type.tag.location <- checkFileNames(run.type.tag.location, main.output.dir, dataset_title, guess = T)
-# OUTPUT --------------------------------------------------------- 
-# Reading from TSCA2019_neural_stats_files_log_2021-10-25.txt...
-# Got 220 files.
-# Store the run.type.tag.location.vector
-# ---------------------------------------------------------------- 
-unique(run.type.tag.location) # 5 6 4
+# Level 1
+
+## Read neural stats files
+
+Extract all of the data from the files and transform into long data format (dat1)
+
+```{r}
+extractAllData(dataset_title, 
+               acsn_map,
+               append = F, 
+               plate.id.tag.location = NULL,
+                             noisy_functions = noisy_functions)
+```
+
+RESUME HERE
+
+* Get the plate.id for the 6 files that don't have a plate ID because they were run with older software (so will probably get from file name. Do in run_me).
+* Determine the run_type! See previous progress (notes from below copied, see also C:\Users\acarpe01\OneDrive - Environmental Protection Agency (EPA)\Profile\Documents\mea_acute\placeholder\was-in-experimental1\determine_run_type.R)
+* Determine wllq (then integrate/clean loose functions for wllq)
+* Check axis settings (for consistency across files) - do want to do this, but current function in check-functions is too buried (see function getNeuralStatsHeaderDat.R for starters (used to be part of fileToLongdat))
+* check if any parameters missing from a given file
+* check analysis duration, maybe analysis start time - again, I think I want to do this, but after have read in the files adn can view myself
+* deprecate check-functions
 
 
-# Check the neural stats files for common issues
-tryCatch(writeCheckSummary(main.output.dir, dataset_title), 
-         error = function(e){
-           closeAllConnections()
-           e } )  
-# OUTPUT --------------------------------------------------------- 
-# TSCA2019_check_summary_2021-12-16.txt is ready.
-# ---------------------------------------------------------------- 
-# all parameters present in every file
-# 1 file seems to have an analysis duration that is far too short:
-# AC_20210512_MW75-8213_13_35(002)(000).csv analysis duration is 420.75s
-# only about 7 min
-# I will ask Kathleen if this is the only version of the 
+## Determine run type
 
-# extract all of the data from the files and transform into long data format (dat1)
-extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
+Old code:
 
-# Troubleshooting an error: 
-# get the files from the files_log that are not already in dat1
-files_logs <- list.files(path = main.output.dir, pattern = paste0("neural_stats_files_log_"), recursive = F, full.names = T)
-files_log <- files_logs[order(basename(files_logs), decreasing = T)[1]] # get the most recent files log
-all_files <- read_files(output.dir, files_log)
-i <- 1
-test1 <- fileToLongdat(all_files[i], run.type.tag.location[i], plate.id.tag.location = numeric(0), guess_run_type_later = F)
-str(test1)
-ncol(test1) # 19
-# these updates might have fixed it
-
-extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
-
-# I think there might be something wrong with file 6
-i <- 6
-test6 <- fileToLongdat(all_files[i], run.type.tag.location[i], plate.id.tag.location = numeric(0), guess_run_type_later = F)
-str(test6)
-# hmm, looks fine to me
-ncol(test6) # 19
-setdiff(names(test1), names(test6)) # empty
-
-extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = T)
-
-# maybe actually file #43?
-i <- 43
-test43 <- fileToLongdat(all_files[i], run.type.tag.location[i], plate.id.tag.location = numeric(0), guess_run_type_later = F)
-str(test43)
-# nope, totall fine
-
-# Why am I getting this error???!
-
-# oh wait, I had set append = TRUE :(((((((((
-extractAllData(main.output.dir, dataset_title, run.type.tag.location, plate.id.tag.location = plate.id.tag.location, append = F)
-# success!
-# With warnings that 6 plates don't have a plate id
-# (I realized this is because they don't have a plate id in the file header,
-# bc ran with different version of software)
-
-
+```{r}
 # RESUME HERE --------------------------------
 # Motivation: run type tags in these files are quite inconsistent
 # Would be so much easier to just use the file times as reported by axis
@@ -311,6 +335,11 @@ dat1[, multiple_unique_ranks :=
        pmax(file_run_type_tag_rank, file_exp_start_time_rank, file_original_file_time_rank, file_name_rank)
      - pmin(file_run_type_tag_rank, file_exp_start_time_rank, file_original_file_time_rank, file_name_rank)]
 
+
+
+
+=======
+  >>>>>>> master
 # OUTPUT --------------------------------------------------------- 
 # Level 1 - Extract All Data:
 #   
@@ -341,12 +370,7 @@ dat1[, multiple_unique_ranks :=
 # Let's just review how the function works,
 # then see how bad this situation is (can I write a simple rule, or much easier to just fix on a case by case basis here?)
 
-# How filetoLongdat guesses the run type:
-run_type <- switch(substring(run.type.tag,1,2), 
-                   "00" = "baseline",
-                   "01" = "treated",
-                   sub("\\.csv","",run.type.tag))
-# okay, so this is pretty rigid
+
 
 # view dat1
 dat1 <- get_latest_dat(lvl = "dat1", dataset_title)
@@ -474,13 +498,87 @@ openxlsx::addWorksheet(wb, sheetName = 'Sheet1')
 writeData(wb, sheet = 1, x = prep.dat2)
 saveWorkbook(wb, file = 'TSCA2019_MEA_Acute_baseline_recordings_from_2021.xlsx', overwrite = T)
 rm(dat1)
+```
 
+## Code snippets cut from fileToLongdat
+
+### determining run type
+
+```{r}
+# determine run type from filei
+# _00 is for baseline. _01 is for treated
+# user enters run.type.tag.location in input file names (usually 5)
+# e.g. TC_20190508_MW68-0808_13_00(000).csv is baseline, and TC_20190508_MW68-0808_13_01(000).csv is treated.
+# ignore the 0's and 1's that come after the first 2 digits in that tag
+run.type.tag <- strsplit(basename(filei), split = "_")[[1]][run.type.tag.location]
+if (guess_run_type_later) {
+  run_type <- sub("\\.csv","",run.type.tag)
+} else{
+  run_type <- switch(substring(run.type.tag,1,2), 
+                     "00" = "baseline",
+                     "01" = "treated",
+                     sub("\\.csv","",run.type.tag))
+}
+if(!run_type %in% c('baseline','treated')) warning(paste0("\nrun type cannot be determined for ",basename(filei),'.\nNo wllq checks will be done for this recording.'))
+
+```
+
+
+### setting wllq based on run type
+
+```{r}
+# SET THE WELL QUALITY
+
+# for baseline recordings, do 2 checks for wllq
+if (run_type == "baseline") {
+  
+  longdat[, wllq := 1] # set the default wllq
+  longdat[, wllq_notes := ""]
+  
+  # if nAE is less than 10 or is NA, set wllq=0
+  low_ae_wells <- longdat[acsn == "Number of Active Electrodes" & (activity_value < 10 | is.na(activity_value)), well]
+  longdat[well %in% low_ae_wells, `:=` (wllq = 0, wllq_notes = "Baseline # of AE < 10; ")]
+  
+  # if the MFR is very low or near the theoretical upper limit, remove that well
+  # see the script mfr_baseline_cutoff_investigation.R 
+  # or the notbeook 'MEA Acute Pre-Process for TCPL', Tab "Development", Page "Mean Firing Rate Baseline Cutoff"
+  # for more details
+  mfr_upper_threshold <- 3.4036511 # this is the 95th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
+  mfr_lower_threshold <- 0.6377603 # this is the 5th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
+  high_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & activity_value > mfr_upper_threshold, well]
+  longdat[well %in% high_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR > ",mfr_upper_threshold," Hz; "))]
+  low_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & (activity_value < mfr_lower_threshold | is.na(activity_value)), well]
+  longdat[well %in% low_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR < ",mfr_lower_threshold," Hz; "))]
+}
+else {
+  # don't assign wllq for treated wells (yet)
+  longdat[, `:=` (wllq = NA_integer_, wllq_notes = "")]
+}
+# for baseline or treated, if recording length is very short or very  long, remove it
+if (standard_analysis_duration_requirement) {
+  if (abs(analysis_duration - 2400) > 1400) cat(basename(filei),"will be removed. Recording length is",analysis_duration,"\n")
+  longdat[analysis_duration < 1000, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length < 1000 s; "))]
+  longdat[analysis_duration > 3800, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes,"Recording length > 3800 s; "))]    
+}
+```
+
+summarize output of wllq (taken from extract all data)
+
+```{r}
+# print summary of wllq changes
+cat("Summary of dates/plates with wllq=0 at Level 1:\n")
+print(dat1[wllq == 0, .(wllq_set_to_zero = paste0(sort(unique(well)),collapse=",")), by = c("experiment.date","plate.id")][order(experiment.date, plate.id)])
+
+```
+
+
+
+# Level 2
+
+```{r}
 
 
 # collapse the plate data by calculating the percent change in activity (dat2)
-
-# ?? Consider renaming to be more descriptive, e.g., "collapseDataByWell" or "calcPercentChange"
-
 collapsePlateData(main.output.dir, dataset_title, main.dir = root_output_dir)
 # OUTPUT --------------------------------------------------------- 
 # 
@@ -682,3 +780,6 @@ save(dat4, file = file.path(main.output.dir, paste0("output/",dataset_title,"_da
 cat("\ndat4 saved on:",as.character.Date(Sys.Date()), "\n")
 
 # you're done!
+
+```
+

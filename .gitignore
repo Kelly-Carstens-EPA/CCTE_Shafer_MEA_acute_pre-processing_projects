@@ -1,0 +1,7 @@
+##############################
+# Individual files to ignore #
+##############################
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
