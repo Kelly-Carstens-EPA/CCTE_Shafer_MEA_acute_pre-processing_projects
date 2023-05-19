@@ -13,7 +13,7 @@ fileToLongdat <- function(filei,
   
   # find the next blank line after well averages index
   next.blank.row.dist <- which(is.na(file_col1[well.averages.rowi:length(file_col1)]) | file_col1[well.averages.rowi:length(file_col1)] == "")[1]
-
+  
   # COLLECT THE DATA --------------------------------------------------------
   
   # read in the data from well.averages.rowi index
@@ -23,7 +23,7 @@ fileToLongdat <- function(filei,
   setnames(dat, old = grep("[Ww]ell.[Aa]verages", names(dat),value=T), new = "acsn")
   dat <- dat[acsn != "Treatment/ID"] # remove Treatment/ID row (usually is blank)
   dat[, c(setdiff(names(dat),'acsn')) := lapply(.SD, as.numeric), .SDcols = setdiff(names(dat),'acsn')] # make all well columns double, not integer
-
+  
   # melt the data in long file format
   longdat <- melt(dat, id.vars = "acsn", variable.name = "well", value.name = "activity_value", variable.factor = F)
   
@@ -47,12 +47,15 @@ fileToLongdat <- function(filei,
     plate.id <- sub(" ","",plate.id)
     if(!grepl('^MW',plate.id)) plate.id <- paste0('MW',plate.id)
   }
-  if (nchar(plate.id) < 3) warning(paste0("\nplate.id not found for ",filei))
+  if (nchar(plate.id) < 3) {
+    plate.id <- NA_character_
+    warning(paste0("\nplate.id not found for ",filei))
+  }
   
   date <- headdat[grepl("[Ee]xperiment [Ss]tart [Tt]ime",file_col1), format(as.Date(file_col2, format = "%m/%d/%Y"), "%Y%m%d")]
   if (length(date) == 0 || is.na(date)) stop(paste0("\ndate not found."))
   
-  analysis.start <- headdat[grepl("Analysis Start",file_col1), as.numeric(file_col2)]
+  analysis_start <- headdat[grepl("Analysis Start",file_col1), as.numeric(file_col2)]
   analysis_duration <- headdat[grepl("Analysis Duration",file_col1), as.numeric(file_col2)]
   setting_min.num.spks.network.burst <- headdat[grepl("Minimum Number of Spikes \\(network bursts\\)",file_col1), as.numeric(file_col2)]
   setting_axis.version <- headdat[grepl("AxIS Version",file_col1), paste0(unique(file_col2),collapse=",")]
@@ -62,24 +65,24 @@ fileToLongdat <- function(filei,
   
   # ADD ID DATA TO LONGDAT --------------------------------------------------
   
-  # set apid as the experiment date
+  # add date, apid, rowi, and coli
   longdat[, plate.id := plate.id]
   longdat[, experiment.date := date]
   longdat[, apid := date]
-  
-  # rowi and coli
   longdat[, coli := as.integer(stri_extract(well, regex = '[0-9]+'))]
   longdat[, rowi := match(stri_extract(well, regex = '[A-Z]+'), LETTERS)]
   
+  # add file time info & other settings
+  longdat[, `:=`(experiment_start_time = exp_start_time,
+                 original_file_time = original_file_time,
+                 analysis_start = analysis_start, 
+                 analysis_duration = analysis_duration)]
+  longdat[, `:=`("setting_min.num.spks.network.burst" = setting_min.num.spks.network.burst, 
+                 "setting_axis.version" = setting_axis.version)]
+  
   # add neural_stats_file
   longdat[, neural_stats_file := basename(filei)]
-  
-  # add the analysis timing data
-  longdat[, `:=`(analysis_start = analysis.start, analysis_duration = analysis_duration)]
-  
-  # add other settings data
-  longdat[, `:=`("setting_min.num.spks.network.burst" = setting_min.num.spks.network.burst, "setting_axis.version" = setting_axis.version)]
-  
+
   # map to the acnm's. Throw an error if any acsn's aren't in the acsn map table
   longdat <- merge(longdat, acsn_map, by = c("acsn"), all.x = TRUE)
   if (any(is.na(unique(longdat$acnm)))) {
