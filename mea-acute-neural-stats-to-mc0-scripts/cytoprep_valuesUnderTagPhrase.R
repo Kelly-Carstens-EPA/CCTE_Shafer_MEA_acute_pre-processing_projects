@@ -27,12 +27,7 @@ valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type) {
       test_for_na <- any(is.na(add.dat[(Row %in% LETTERS[1:6] & coli %in% 1:8) | (Row=="G" & coli %in% 4:5) | (Row=="H" & coli %in% 1:6)]))
     }
     if (test_for_na) {
-      cat(paste0("\n Some ",cyto_type," ",value.name," on ",plate.id," are NA:\n"))
-      print(dcast(add.dat[,c("Row","coli",value.name), with = F], Row ~ coli, value.var = value.name))
-      check <- readline(prompt = "Do you wish to continue anyways? (y/n): ")
-      if (!check %in% c("Y","y","Yes","yes")) {
-        stop("cytotox data collection aborted.")
-      }
+      warning(paste0("\n Some ",cyto_type," ",value.name," on ",plate.id," are NA (may include some cells that are not needed for final cytodat)"))
     }
     
     tag_dat <- rbind(tag_dat, add.dat)

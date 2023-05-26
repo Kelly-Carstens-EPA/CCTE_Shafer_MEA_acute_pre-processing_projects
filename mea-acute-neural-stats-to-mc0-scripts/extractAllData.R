@@ -3,7 +3,7 @@ extractAllData <- function(dataset_title,
                            acsn_map,
                            append = F, 
                            plate.id.tag.location = NULL,
-                           noisy_functions = noisy_functions) {
+                           noisy_functions) {
   
   cat("\n\nLevel 1 - Extract All Data:\n")
   
@@ -37,11 +37,8 @@ extractAllData <- function(dataset_title,
     rm(add.dat)
   }
   
-  # save the updated data
   dat1 <- rbind(dat1, newdat)
-  outfile <- paste0(dataset_title, "/output/",dataset_title,"_dat1.RData")
-  save(dat1, file = outfile)
-  cat("\n",basename(outfile), " is ready.\n",sep="")
   
-  return(0)
+  return(dat1)
+
 }

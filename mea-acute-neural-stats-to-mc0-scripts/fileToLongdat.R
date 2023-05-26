@@ -49,7 +49,7 @@ fileToLongdat <- function(filei,
   }
   if (nchar(plate.id) < 3) {
     plate.id <- NA_character_
-    warning(paste0("\nplate.id not found for ",filei))
+    warning(paste0("\nplate.id not found for ",basename(filei)))
   }
   
   date <- headdat[grepl("[Ee]xperiment [Ss]tart [Tt]ime",file_col1), format(as.Date(file_col2, format = "%m/%d/%Y"), "%Y%m%d")]

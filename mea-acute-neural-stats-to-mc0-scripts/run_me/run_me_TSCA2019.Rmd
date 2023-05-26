@@ -34,6 +34,7 @@ start.dir <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response"
 dataset_title <- "TSCA2019" # e.g. "name2020"
 select.neural.stats.files <- F # select new neural stats files, or use the files in the most recent neural_stats_files_log?
 select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
+select.raw.cytotox.files <- F # select new raw cytotoxicity files, or use the files in the most recent raw_cytotox_files_log?
 run.type.tag.location <- NULL # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
 spidmap_file <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/EPA_25092_EPA-Shafer_339_20190722.xlsx"
 use_sheet <- 1 # sheet name in spidmap_file
@@ -41,7 +42,7 @@ use_sheet <- 1 # sheet name in spidmap_file
 # optional adjutsment; usually can use defaults:
 override_wllq_checks <- FALSE # set to TRUE only if you have already verified your wllq updates
 plate.id.tag.location <- numeric(0) # only update this if you have to, if your dataset does not include plate.id.tag in file headers
-noisy_functions <- TRUE
+noisy_functions <- FALSE
 standard_analysis_duration_requirement <- TRUE # default should be true (recordings that are shorten than this length will be set to wllq == 0)
 ```
 
@@ -60,11 +61,11 @@ acsn_map <- as.data.table(read.csv(file.path("neural_stats_acsn_to_tcpl_acnm_map
 # acsn_map <- acsn_map[, .(acsn, acnm)]
 ```
 
-# TO DO LIST 
+Save items to be kept throughout all levels
+```{r}
+keep.items <- c(ls(),'keep.items')
+```
 
-* check if any parameters missing from a given file (see "Check if all parameters..." below)
-* deprecate check-functions
-* Fix "get_latest_dat" (why when i run dat1 <- get_latest_dat(lvl = 'dat1', dataset_titles = dataset_title) does it load TSCA2019_dat1_2021-12-30.RData , rather than version from now?)
 
 # Level 0 - Gather and Check Files
 
@@ -118,7 +119,7 @@ writeData(wb, 1, data.table('culture_folders' = group.folders))
 saveWorkbook(wb, file = 'TSCA2019/tables/TSCA2019_culture_folders_to_review.xlsx')
 ```
 
-## Get list of neural stats and meta data files to use
+## Get list of neural stats files, meta data files, and (opt) raw cytotoxicity data files
 
 ```{r}
 cat(paste0(dataset_title, " MEA Acute TCPL Level 0 Data Prep Running Log\nDate: ",as.character.Date(Sys.Date()),"\n"))
@@ -216,29 +217,59 @@ if (select.calculations.files) {
 }
 ```
 
+Select raw cytotoxicity data files
 
-# Level 1
+```{r}
+if (select.raw.cytotox.files) {
+  
+  # Use below lines of code to get files in group folders that contain the phrase "Calculations"
+  # Or, if project is not cleanly organized, use below function to cycle through 
+  # folders in project and manually select files using the 'choose.files' window interface
+  # selectInputFiles(start.dir, dataset_title, files_type = "calculations")
+  
+  # Get all cytotox files
+  # (note that namesa re not retained with recursive = T)
+  all.xls.files <- unlist(lapply(group.folders, 
+                                 function(folderi) list.files(path = file.path(folderi), 
+                                                              pattern = '\\.xls$', 
+                                                              full.names = T, 
+                                                              recursive = T)))
+  raw.cytotox.files.ungrouped <- all.xls.files[grepl('Cytotoxicity',all.xls.files)]
+  all.group.folders <- dirname(dirname(raw.cytotox.files.ungrouped))
+  raw.cytotox.files <- split(raw.cytotox.files.ungrouped, f = all.group.folders)
+  
+  # Check that there is exactly 1 LDH file per group
+  num.LDH.per.group <- sapply(raw.cytotox.files, function(seti) sum(grepl('LDH',seti)))
+  cat('Groups that do not have exactly 1 LDH file:')
+  num.LDH.per.group[num.LDH.per.group != 1]
+  
+  # (if any, edit selection or rename files if missing "LDH" in name)
+  
+  # Check that there are exactly 3 CTB files per group
+  num.CTB.per.group <- sapply(raw.cytotox.files, function(seti) sum(!grepl('LDH',unlist(seti))))
+  cat('Groups that do not have exactly 3 CTB file:')
+  num.CTB.per.group[num.CTB.per.group != 3]
+  
+  # Write files to log
+  writeLogFile(unlist(raw.cytotox.files), dataset_title, files_type = 'raw_cytotox')
+  
+}
+```
+
+
+# Level 1 
 
 ## Read neural stats files
 
 Extract all of the data from the files and transform into long data format (dat1)
 
 ```{r}
-extractAllData(dataset_title, 
-               acsn_map,
-               append = F, 
-               plate.id.tag.location = NULL,
-               noisy_functions = noisy_functions)
-# TSCA2019_dat1.RData is ready.
-# [1] 0
+dat1 <- extractAllData(dataset_title, 
+                       acsn_map,
+                       append = F, 
+                       plate.id.tag.location = NULL,
+                       noisy_functions = noisy_functions)
 ```
-
-Load data so that can view & make updates
-
-```{r}
-load('TSCA2019/output/TSCA2019_dat1.RData')
-```
-
 
 Get plate.id from filename for files that don't have plate ID in file header (because were ran with older machine/software)
 
@@ -252,7 +283,7 @@ dat1[check_plate_ids == TRUE, .N, by = .(plate.id, neural_stats_file)]
 
 Looks good!
 
-## Determine run type for each file (move to function?)
+## Determine run type for each file
 
 Get a numeric, sortable version of the time from the original_start_time and experiment start time (to use to help determine which files are baseline versus treated).
 
@@ -334,21 +365,29 @@ dat1[file_rank_oft == 2 & file_rank_name == 2, run_type := 'treated']
 stopifnot(nrow(dat1[is.na(run_type)]) == 0)
 ```
 
+Confirm there is exactly 1 baseline and 1 treated file per experiment/plate
+
+```{r}
+dat1[, .(num_base_files = length(unique(neural_stats_file[run_type == 'baseline'])),
+         num_trt_files = length(unique(neural_stats_file[run_type == 'treated']))),
+     by = .(experiment.date, plate.id)][num_base_files != 1 | num_trt_files != 1]
+```
 
 
-## Setting wllq based on run type
+
+## Setting wllq_lvl1 based on run type
 
 ```{r}
 dat1 <- level1_set_wllq(dat1, standard_analysis_duration_requirement)
 ```
 
-Summarize output of wllq (taken from extract all data)
+Summarize output of wllq_lvl1 (taken from extract all data)
 
 ```{r}
-dat1[, .(num_wells= length(unique(paste0(experiment.date,plate.id,well)))), by = .(wllq, run_type, wllq_notes)][order(run_type, -wllq)]
+dat1[, .(num_wells= length(unique(paste0(experiment.date,plate.id,well)))), by = .(wllq_lvl1, run_type, wllq_lvl1_notes)][order(run_type, -wllq_lvl1)]
 ```
 
-Note that all treated run_types are expected to have wllq == NA at this point, unless analysis duration was outside the allowable range (then would have wllq == 0).
+Note that all treated run_types are expected to have wllq_lvl1 == NA at this point, unless analysis duration was outside the allowable range (then would have wllq_lvl1 == 0).
 
 
 ## Check consistency in settings in Neural Statistics Compiler header
@@ -406,7 +445,7 @@ Check for setting_types with inconsistent setting values.
 
 ```{r}
 set.tb[, num_unique_vals := length(unique(setting_val)),
-              by = .(setting_type, setting)]
+       by = .(setting_type, setting)]
 set.tb[num_unique_vals != 1, 
        .(maestro_types = paste0(unique(maestro_type),collapse = ",")),
        by = .(setting_type, setting, num_unique_vals)]
@@ -429,7 +468,7 @@ Check for maestro_type - setting_type combinations with inconsistent setting val
 
 ```{r}
 set.tb[, num_unique_vals := length(unique(setting_val)),
-              by = .(maestro_type, setting_type, setting)]
+       by = .(maestro_type, setting_type, setting)]
 set.tb[num_unique_vals != 1, 
        .N,
        by = .(maestro_type, setting_type, setting, num_unique_vals)]
@@ -517,54 +556,238 @@ Any weirdness in the analysis start?
 dat1[, .N, by = .(analysis_start)]
 ```
 
-## Check if all parameters are present in all files
+All starting at 0, this is fine.
 
-RESUME HERE
+## Determine culture.date & group
+
+Can get culture.date from the file name itself or from the file foldername. I'm finding that the foldername tends to be a bit more reliable (less prone to typos).
 
 ```{r}
-# Count number of parameters per file
-dat1[, num_param := length(unique(acsn)), by = .(neural_stats_file)]
+# Get full file names to get culture date from 
+files <- read_files(dataset_title)
+files.tb <- data.table(fullname = files)
+files.tb[, basename := basename(fullname)]
+files.tb[, culture_folder := basename(dirname(dirname(fullname)))]
+files.tb[, group_char := stri_extract(culture_folder, regex = 'G[0-9]+')]
+files.tb[, group_int := stri_extract(group_char, regex = '[0-9]+')]
+files.tb[, culture.date := stri_extract(culture_folder, regex = '[0-9]{8}')]
+files.tb[, .N, by = .(culture.date)]
+dat1 <- merge(dat1, files.tb, by.x = 'neural_stats_file', by.y = 'basename', all.x = T)
 
-# Confirm all endpoints in dat1 match an acsn in acsn_map
-setdiff(dat1$acsn, acsn_map$acsn)
+# Confirm days from culture to experiment date are within 13-15
+# (if not, either there is a typo, or need to consider if data is similar enough to other expects performed in DIV 13-15)
+dat1[, days_to_exp := as.numeric(as.Date(experiment.date, format = '%Y%m%d'))
+     - as.numeric(as.Date(culture.date, format = '%Y%m%d'))]
+dat1[, .(num_files= length(unique(neural_stats_file))), by = .(days_to_exp)][order(-num_files)]
+#    days_to_exp  V1
+# 1:          13 110
+# 2:          15 102
+# 3:          14   6
+# looks good/reasonable!
 
-# Confirm expected number of endpoints
-dat1[, .N, by = .(num_param)]
-#    num_param      N
-# 1:        43 132096
-# 2:        44 325248
-# some have 44, some ahve 43..
+# Compare the culture date from foldername to culture date in file name
+# Resolve discrepancies
+dat1[, culture.date.file := stri_extract(neural_stats_file, regex = '[0-9]{8}')]
+dat1[culture.date != culture.date.file, .(length(unique(neural_stats_file))), by = .(culture_folder, culture.date.folder = culture.date, culture.date.file, experiment.date, days_to_exp)]
+#                                   culture_folder culture.date.folder culture.date.file experiment.date days_to_exp V1
+# 1:                          20210310 Culture G13            20210310          20210317        20210325          15  4
+# 2: 20210324 Culture G14 (199E02 may need repeat)            20210324          20210331        20210406          13  6
+# 3: 20210414 Culture G19 (200A08 may need repeat)            20210414          20210429        20210429          15  6
+# 4: 20210602 Culture G28 (201E01, 201F04, 201F05)            20210602          20210526        20210615          13  6
+# 5:                          20210602 Culture G29            20210602          20210526        20210616          14  6
 
-acsn_map[Description..adapted.from.AxISUserGuide.1.5..a.slightly.older.version. != '', .N]
-acsn_map[!acsn %in% dat1$acsn]
-
-
-# (future - use acsn_map on master branch which has the subset of endpoints that have been registered more recently)
 ```
 
 
-# Level 2
+G13 - lab notebook clearly indicates that culture.date was 2021-03-10 for all plates. I'm faily confident that the culture.date.file was just a typo
+G14 - again, lab notebook agrees with culture date from folder name
+G19 - again, lab notebook agrees with culture date from folder name. Looks like culture.date.file got changed to experiment.date
+G28 - again, lab notebook agrees with culture date from folder name. 20210526 was the culture date of the previous culture, so likely the files names just go copied over.
+G29 - again, lab notebook agrees with culture date from folder name. 20210526 was the culture date of the previous culture, so likely the files names just go copied over.
+
+So in every cases, the culture date in the folder name agrees with the lab notebook. I'm going to assume that this is correct, and that the culture.date form the file names that are different are typos.
 
 ```{r}
+# finalize the culture.date, get rid of extra columns
+# culture.date (from folder) does not need any changes
+dat1[, culture.date.file := NULL]
+```
+
+## Save updated dat1
+
+```{r}
+setkey(dat1, NULL)
+save(dat1, file = paste0(dataset_title, "/output/",dataset_title,"_dat1.RData"))
+rm(list = setdiff(ls(), keep.items))
+```
 
 
+# Level 2 
+
+## Calculate % change in activity values
+
+```{r}
 # collapse the plate data by calculating the percent change in activity (dat2)
-collapsePlateData(main.output.dir, dataset_title, main.dir = root_output_dir)
-# OUTPUT --------------------------------------------------------- 
-# 
-# ---------------------------------------------------------------- 
+dat2 <- calcActivityPercentChange(dataset_title)
 
-# look at data so far
-dat2 <- get_latest_dat(lvl = "dat2", dataset_title)
-dat2[wllq==1, summary(rval)]
-# OUTPUT --------------------------------------------------------- 
-# 
-#
-# ---------------------------------------------------------------- 
-rm(dat2)
+# check it out
+dat2[wllq_lvl2==1, summary(rval)]
+```
 
+Minimum rval should be approximately -100 (slightly below -100 is normal), max is usually Inf.
+
+## Save updated dat2
+
+```{r}
+setkey(dat2, NULL)
+save(dat2, file = file.path(dataset_title,'output',paste0(dataset_title,"_dat2.RData")))
+rm(list = setdiff(ls(), keep.items))
+```
+
+# Level 3
+
+## Create fun to read in raw cytotox values
+
+Get list of cytotox files
+
+```{r}
+raw.cytotox.files <- read_files(dataset_title, files_type = 'raw_cytotox')
+```
+
+
+Note assumptions for LDH and CTB raw data file reading functions:
+
+**LDH**
+
+The function `read_acute_LDH_raw_data` assumes that:
+
+* All plates are 96-well (8x12)
+* For every plate, column 1, there is a non-NA entry that contains the plate info (e.g., "20201104_20201117_MW71-7104_TSCA Acute DR_Plate 1")
+* For every plate, in column 2, there is a cell that contains the word "Temperature"
+* Raw data values for each plate start 1 row below every occurrence of the word "Temperature" and continue for the next 7 rows
+* Raw data values for all plates are in columns 3 - 14
+
+**CTB**:
+
+The function `read_acute_CTB_raw_data` assumes that:
+* 1 plate per file
+* Plates are 96-well (8x12)
+* There is a cell with the letter "A" in the first column that signifies the first row of the plate
+* Raw data values start in the same row as the letter "A" in column 1 and continue for the next 7 rows
+* Raw data values are in columns B:M (i.e., 2 - 13)
+
+
+There are some checks in the functions to see if each file passes these assumptions. If a fail fails these checks, the function will print a statement with a description of the fail. But, a file could have some unexpected data alignment that is not caught by the checks. In that case, thus, these functions are not 100% reliable to read in the raw data, and the values should be compared to the Calculations files.
+
+If a file fails the checks, just manually confirm that the raw data values for those files have been correctly copy-pasted into the Calculations file.
+
+
+Read raw data from LDH files
+```{r}
+raw.cytotox.files.LDH <- grep('LDH',raw.cytotox.files, val = T)
+rawdat.LDH <- data.table()
+for (filei in raw.cytotox.files.LDH) {
+  add.tb <- read_acute_LDH_raw_data(filei)
+  rawdat.LDH <- rbind(rawdat.LDH, add.tb)
+}
+
+# # To debug an individual file:
+# filei
+# debugonce(read_acute_LDH_raw_data)
+# add.tb <- read_acute_LDH_raw_data(filei)
+
+# Note any LDH files that could not be read (manually check that these data values have been correctly copied over to the Calculations file)
+setdiff(basename(raw.cytotox.files.LDH), rawdat.LDH$filename)
+```
+
+Read raw data from CTB files
+```{r}
+raw.cytotox.files.CTB <- raw.cytotox.files[!grepl('LDH',raw.cytotox.files)]
+rawdat.CTB <- data.table()
+for (filei in raw.cytotox.files.CTB) {
+  add.tb <- read_acute_CTB_raw_data(filei)
+  rawdat.CTB <- rbind(rawdat.CTB, add.tb)
+}
+
+# # To debug an individual file:
+# filei
+# debugonce(read_acute_CTB_raw_data)
+# add.tb <- read_acute_CTB_raw_data(filei)
+
+# Note any CTB files that could not be read (manually check that these data values have been correctly copied over to the Calculations file)
+setdiff(basename(raw.cytotox.files.CTB), rawdat.CTB$filename)
+```
+
+Confirm expected # of raw data values per file
+
+```{r}
+rawdat.CTB[, .N, by =.(filename)][N != 96]
+rawdat.LDH[, .N, by =.(filename)][N != 96*3]
+```
+
+
+Get plate IDs for raw CTB and LDH data, then combine
+
+```{r}
+# LDH
+
+# Get plate.id from plate.info (taken from column A of each file) as:
+# (1-2 digits)-(3-4 digits)
+rawdat.LDH[, plate.id := stri_extract(plate.info, regex = '[0-9]{1,2}\\-[0-9]{3,4}')]
+rawdat.LDH[, plate.id := paste0('MW',plate.id)]
+rawdat.LDH[, .N, by = .(plate.id)] # confirm these looks correct
+
+# CTB
+
+# Get plate.id from filename as:
+# (1-2 digits)-(3-4 digits)
+rawdat.CTB[, plate.id := stri_extract(filename, regex = '[0-9]{1,2}\\-[0-9]{3,4}')]
+rawdat.CTB[, plate.id := paste0('MW',plate.id)]
+rawdat.CTB[, .N, by = .(plate.id)] # confirm these looks correct
+
+
+# Combine cyto data
+rawdat.cytotox <- rbind(rawdat.LDH, rawdat.CTB, fill = T)
+```
+
+Get the culture date from the folders for raw cytotox data
+
+```{r}
+# Get full file names to get culture date from 
+files <- read_files(dataset_title, files = 'raw_cytotox')
+files.tb <- data.table(fullname = raw.cytotox.files)
+files.tb[, basename := basename(fullname)]
+files.tb[, culture_folder := basename(dirname(dirname(fullname)))]
+files.tb[, group_char := stri_extract(culture_folder, regex = 'G[0-9]+')]
+files.tb[, group_int := stri_extract(group_char, regex = '[0-9]+')]
+files.tb[, culture.date := stri_extract(culture_folder, regex = '[0-9]{8}')]
+files.tb[, .N, by = .(culture.date)]
+rawdat.cytotox <- merge(rawdat.cytotox, files.tb, 
+                        by.x = 'filename', by.y = 'basename', all.x = T)
+
+# Confirm 3 unique plates of each assay per group
+rawdat.cytotox[, .(num_unique_plate_ids = length(unique(plate.id))), by = .(acsn, culture_folder, group_char)][num_unique_plate_ids != 3]
+# (if any cases, could be that there was a typo in the plate.id in the filename for CTB or in the file header for LDH. Check it out and correct as needed)
+```
+
+
+## Read in cytotox data the traditional way
+
+RESUME HERE
+
+Confirm output looks okay,
+
+Then merge with raw data, making adjustments as needed as noted in OneNote
+
+```{r}
 # get cytotox data
-cytodat <- getAllCytoData(main.output.dir, dataset_title)
+cytodat <- getAllCytoData(dataset_title)
+
+
+# If there are any warnings about NA raw values
+# * confirm that these are expected (rather than e.g. unexpected data alignment)
+
+
 # OUTPUT --------------------------------------------------------- 
 # 
 # ---------------------------------------------------------------- 
@@ -1025,21 +1248,21 @@ dat1[, .N, by = .(culture_folder)]
 
 # I'm pretty sure they won't want the txt prefix in the recording name
 dat1[, recording_name := sub('Recording Name: ','',recording_name)]
-dat1[, culture_date := sub(' .*$','',culture_folder)]
-dat1[culture_date != recording_name, .N, by = .(culture_date, recording_name)]
+dat1[, culture.date := sub(' .*$','',culture_folder)]
+dat1[culture.date != recording_name, .N, by = .(culture.date, recording_name)]
 # not all equa
-dat1[experiment.date != recording_name, .N, by = .(culture_date, recording_name)] # many cases
+dat1[experiment.date != recording_name, .N, by = .(culture.date, recording_name)] # many cases
 # I guess I'll include all 3 for now
 dat1[, group := sub('^[^G]* ','',culture_folder)]
 dat1[, .N, by = .(group)]
 
 prep.dat <- dat1[run_type == 'baseline' & grepl('^2021',experiment.date) & acsn %in% c('Weighted Mean Firing Rate (Hz)','Number of Active Electrodes'), 
-                 .(culture_date, group, experiment.date, recording_name, plate.id, well, acsn, activity_value, wllq, wllq_notes)]
+                 .(culture.date, group, experiment.date, recording_name, plate.id, well, acsn, activity_value, wllq, wllq_notes)]
 setnames(prep.dat, old = c('experiment.date','plate.id'), new = c('experiment_date','plate'))
-prep.dat2 <- dcast(prep.dat, culture_date + group + experiment_date + recording_name + plate + well + wllq + wllq_notes ~ acsn, value.var = 'activity_value')
+prep.dat2 <- dcast(prep.dat, culture.date + group + experiment_date + recording_name + plate + well + wllq + wllq_notes ~ acsn, value.var = 'activity_value')
 prep.dat2
 
-prep.dat2[, .N, by = .(culture_date, group, experiment_date)]
+prep.dat2[, .N, by = .(culture.date, group, experiment_date)]
 
 wb <- createWorkbook()
 openxlsx::addWorksheet(wb, sheetName = 'Sheet1')
@@ -1070,3 +1293,46 @@ if (guess_run_type_later) {
 if(!run_type %in% c('baseline','treated')) warning(paste0("\nrun type cannot be determined for ",basename(filei),'.\nNo wllq checks will be done for this recording.'))
 
 ```
+
+
+# Overall checks
+
+## Check that all parameters are registered in invitrodb
+
+
+**Replace below with just checking that all export_ready == 1 endpoitns are present
+
+
+Note that different maestros (and possibly different axis versions) will output slightly different subsets of endpoints. So, just want to check that there are no unexpected new endpoints.
+
+```{r}
+setdiff(dat1$acsn, acsn_map[Status_2023.05.12 == 'registered in invitrodb',unique(acsn)])
+```
+
+"Network ISI Coefficient of Variation" - this is not an endpoint that has export_ready == 1, so this is okay (even though it is registered).
+
+```{r}
+# Note total parameters
+dat1[, param_total := length(unique(acsn)), by = .(neural_stats_file)]
+dat1[, registered_param := length(unique(acsn[acsn %in% acsn_map[Status_2023.05.12 == 'registered in invitrodb',acsn]])), by = .(neural_stats_file)]
+dat1[, not_registered_param := length(unique(acsn[acsn %in% acsn_map[Status_2023.05.12 != 'registered in invitrodb',acsn]])), by = .(neural_stats_file)]
+dat1[, .(num_files = length(unique(neural_stats_file))),
+     by = .(param_total, registered_param, not_registered_param)]
+
+# Note which of the registered parameters are missing (will vary by maestro type)
+registered.params <- acsn_map[Status_2023.05.12 == 'registered in invitrodb',unique(acsn)]
+res <- dat1[, .(missing_params = paste0(setdiff(registered.params, acsn),collapse = ",")), by = .(neural_stats_file, setting_axis.version)]
+res[, .N, by = .(missing_params, setting_axis.version)]
+
+```
+
+I am confident that no one is haphazardly selected which parameters to include. I think it all depends on the versions of the machine/software. So we'll just include all provided info and keep rolling.
+
+Confirm that the main 15 are present in every file
+
+```{r}
+library(tcpl)
+tcplConf(drvr = 'MySQL')
+dat1[]
+```
+

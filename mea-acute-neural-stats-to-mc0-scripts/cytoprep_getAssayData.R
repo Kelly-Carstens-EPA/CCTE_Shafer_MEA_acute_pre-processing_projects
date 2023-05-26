@@ -27,13 +27,5 @@ getAssayData <- function(cyto_type, sourcefile) {
   cat(c(plates),"\n")
   if (length(plates) != 3) stop(paste0("Something is off with plates in ",basename(sourcefile), " ",cyto_type))
   
-  num_negative <- longdat[rval < 0, .N]
-  if(num_negative > 0) {
-    cat(paste0("some values are negative. These will be set to 0\n"))
-    longdat[rval < 0, rval := 0.0]
-  }
-  
-  # check for NA values, in any field
-  
   return(longdat)
 }
