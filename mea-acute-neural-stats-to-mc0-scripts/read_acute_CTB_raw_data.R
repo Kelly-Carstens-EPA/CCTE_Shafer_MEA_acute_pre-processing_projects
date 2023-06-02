@@ -57,7 +57,7 @@ read_acute_CTB_raw_data <- function(filei) {
   
   # Add desired columns
   dat.long[, filename := basename(filei)]
-  dat.long[, acsn := 'CTB']
+  dat.long[, acsn := 'AB']
   dat.long[, rowi := match(row_char, LETTERS)]
   
   return(dat.long)

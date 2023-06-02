@@ -20,10 +20,13 @@ getAllCytoData <- function(dataset_title) {
     rm(add.dat)
   }
   
+  # set rvals to numeric
+  cytodat[, rval := as.numeric(rval)]
+  
   # Set any negative values to 0
-  negatives_rvals <- longdat[rval < 0, c(rval)]
-  if(length(negatives_rvals) > 0) {
-    cat(paste0("some values are negative (",min(negatives_rvals),"-",max(negative_rvals),"):"))
+  negative_rvals <- cytodat[rval < 0, c(rval)]
+  if(length(negative_rvals) > 0) {
+    cat(paste0("some values are negative (",signif(min(negative_rvals),5)," - ",signif(max(negative_rvals),5),"):\n"))
     print(cytodat[, .N, by = .(acnm, rval_is_neg = rval < 0)])
     cat(paste0("These will be set to 0\n"))
     cytodat[rval < 0, rval := 0.0]
