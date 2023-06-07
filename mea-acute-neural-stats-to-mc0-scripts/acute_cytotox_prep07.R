@@ -25,16 +25,16 @@ findTabData <- function(sourcefile, assay = c("AB", "LDH")) {
 }
 
 
-valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type) {
+valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type, min.tag.phrase.count = 3) {
   
   use_plate_rows <- switch(cyto_type, "LDH" = 10, "AB" = 8)
   
-  tag_instances_cols <- dat_dt[, lapply(.SD, function(x) sum(grepl(tagPhrase,x))>=3), .SDcols = names(dat_dt)]
+  tag_instances_cols <- dat_dt[, lapply(.SD, function(x) sum(grepl(tagPhrase,x))>=min.tag.phrase.count), .SDcols = names(dat_dt)]
   dat_tag_col <- which(unlist(tag_instances_cols,use.names=F))[1] # just look at the first column with 3 instances of tagPhrase
   if(length(dat_tag_col) == 0 || is.na(dat_tag_col)) {
     stop(paste0("Tag Phrase '",tagPhrase,"' not found.\n"))
   }
-  use_rows <- grep(tagPhrase, unlist(dat_dt[, dat_tag_col, with = F]))[1:3] # just using first 3 instances, since other calculations may have been done below
+  use_rows <- head(grep(tagPhrase, unlist(dat_dt[, dat_tag_col, with = F])), n = 3) # just using first 3 instances, since other calculations may have been done below
   tag_dat <- data.table()
   for (tag_rowi in use_rows) {
     add.dat <- dat_dt[(tag_rowi+3):(tag_rowi+use_plate_rows), (dat_tag_col):(dat_tag_col+8), with = F]
@@ -68,17 +68,17 @@ valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type) {
   return(tag_dat)
 }
 
-getAssayData <- function(cyto_type, sourcefile) {
+getAssayData <- function(cyto_type, sourcefile, min.tag.phrase.count = 3) {
   
   cat(cyto_type, "\n")
   
   assay_dat_dt <- findTabData(sourcefile, cyto_type)
   
   # get the treatment, concentration, and blank-corrected values
-  treatment_dat <- valuesUnderTagPhrase(assay_dat_dt, tagPhrase = "Chemical", "treatment", cyto_type)
-  conc_dat <- valuesUnderTagPhrase(assay_dat_dt, tagPhrase = "Concentration mM", "conc", cyto_type)
+  treatment_dat <- valuesUnderTagPhrase(assay_dat_dt, tagPhrase = "Chemical", "treatment", cyto_type, min.tag.phrase.count = min.tag.phrase.count)
+  conc_dat <- valuesUnderTagPhrase(assay_dat_dt, tagPhrase = "Concentration mM", "conc", cyto_type, min.tag.phrase.count = min.tag.phrase.count)
   value_tagPhrase <- switch(cyto_type, "LDH" = "Corrected Optical Denisty", "AB" = "Corrected Fluorescence")
-  value_dat <- valuesUnderTagPhrase(assay_dat_dt, tagPhrase = value_tagPhrase, "rval", cyto_type)
+  value_dat <- valuesUnderTagPhrase(assay_dat_dt, tagPhrase = value_tagPhrase, "rval", cyto_type, min.tag.phrase.count = min.tag.phrase.count)
   
   # merge values based on plate, row, and column
   longdat <- merge(treatment_dat[!is.na(Row)], conc_dat[!is.na(Row)], by = c("Row","coli","plate.id"), fill = T, all = T)
@@ -95,7 +95,7 @@ getAssayData <- function(cyto_type, sourcefile) {
   # check that there are 3 unique plate id
   plates <- unique(longdat$plate.id) # this is important for correct merging of trt, conc, rvals
   cat(c(plates),"\n")
-  if (length(plates) != 3) stop(paste0("Something is off with plates in ",basename(sourcefile), " ",cyto_type))
+  if (length(plates) != 3) warning(paste0("Something is off with plates in ",basename(sourcefile), " ",cyto_type))
   
   num_negative <- longdat[rval < 0, .N]
   if(num_negative > 0) {
@@ -109,7 +109,7 @@ getAssayData <- function(cyto_type, sourcefile) {
 }
 
 
-getFileCytoData <- function(sourcefile) {
+getFileCytoData <- function(sourcefile, min.tag.phrase.count = min.tag.phrase.count) {
   
   # get the experiment date from Plate 1
   # plate1_dat <- as.data.frame(read_excel(sourcefile, sheet = "Plate 1", range = "A1:J10", col_names = paste0("col",1:10)))
@@ -122,8 +122,8 @@ getFileCytoData <- function(sourcefile) {
     experiment_date <- NA_character_
   }
   
-  AB_dat <- getAssayData("AB",sourcefile)
-  LDH_dat <- getAssayData("LDH",sourcefile)
+  AB_dat <- getAssayData("AB",sourcefile, min.tag.phrase.count = min.tag.phrase.count)
+  LDH_dat <- getAssayData("LDH",sourcefile, min.tag.phrase.count = min.tag.phrase.count)
   
   allfiledat <- rbind(AB_dat, LDH_dat)
   
@@ -146,7 +146,7 @@ getFileCytoData <- function(sourcefile) {
   return(allfiledat)
 }
 
-getAllCytoData <- function(main.output.dir, dataset_title, files_log = "") {
+getAllCytoData <- function(main.output.dir, dataset_title, files_log = "", min.tag.phrase.count = 3) {
   
   cat("\n\nLoad Cytotoxicity Data:\n")
   
@@ -159,7 +159,7 @@ getAllCytoData <- function(main.output.dir, dataset_title, files_log = "") {
   cytodat <- list()
   for (i in 1:length(calc_files)) {
     cat("\n",basename(calc_files[i]),"\n",sep="")
-    add.dat <- getFileCytoData(calc_files[i])
+    add.dat <- getFileCytoData(calc_files[i], min.tag.phrase.count = min.tag.phrase.count)
     cytodat <- rbind(cytodat, add.dat)
     rm(add.dat)
   }

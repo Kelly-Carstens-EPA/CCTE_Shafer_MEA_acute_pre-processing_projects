@@ -186,8 +186,11 @@ fileToLongdat <- function(filei, run.type.tag.location,
     # see the script mfr_baseline_cutoff_investigation.R 
     # or the notbeook 'MEA Acute Pre-Process for TCPL', Tab "Development", Page "Mean Firing Rate Baseline Cutoff"
     # for more details
-    mfr_upper_threshold <- 3.4036511 # this is the 95th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
-    mfr_lower_threshold <- 0.6377603 # this is the 5th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
+    # mfr_upper_threshold <- 3.4036511 # this is the 95th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
+    # mfr_lower_threshold <- 0.6377603 # this is the 5th percentile of the DNT2019, ToxCast2016, APCRA2019 data where wllq==1 and nAE>10
+    mfr_upper_threshold <- 100 #modifying for impedance dataset
+    mfr_lower_threshold <- 0.5 #modifying for impedance dataset
+    
     high_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & activity_value > mfr_upper_threshold, well]
     longdat[well %in% high_mfr_wells, `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "Baseline MFR > ",mfr_upper_threshold," Hz; "))]
     low_mfr_wells <- longdat[acsn == "Mean Firing Rate (Hz)" & (activity_value < mfr_lower_threshold | is.na(activity_value)), well]

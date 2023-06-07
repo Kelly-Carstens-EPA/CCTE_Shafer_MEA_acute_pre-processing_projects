@@ -1,0 +1,146 @@
+date,plate.id,DIV,well,wllq,wllq_notes,endpoint_type
+20210901,MW502627A,NA,A2,0,Picrotoxin is replaced with Tween 20,mea
+20210901,MW502627A,NA,A3,0,Picrotoxin is replaced with Tween 20,mea
+20210901,MW502627A,NA,A4,0,Picrotoxin is replaced with Tween 20,mea
+20210901,MW502627A,NA,A5,0,Picrotoxin is replaced with Tween 20,mea
+20210901,MW502627A,NA,A6,0,Picrotoxin is replaced with Tween 20,mea
+20210901,MW502627A,NA,A7,0,Picrotoxin is replaced with Tween 20,mea
+20210901,MW502627A,NA,A8,0,Picrotoxin is replaced with Tween 20,mea
+20210901,MW502627A,NA,A2,0,Picrotoxin is replaced with Tween 20,CTB
+20210901,MW502627A,NA,A3,0,Picrotoxin is replaced with Tween 20,CTB
+20210901,MW502627A,NA,A4,0,Picrotoxin is replaced with Tween 20,CTB
+20210901,MW502627A,NA,A5,0,Picrotoxin is replaced with Tween 20,CTB
+20210901,MW502627A,NA,A6,0,Picrotoxin is replaced with Tween 20,CTB
+20210901,MW502627A,NA,A7,0,Picrotoxin is replaced with Tween 20,CTB
+20210901,MW502627A,NA,A8,0,Picrotoxin is replaced with Tween 20,CTB
+20210901,MW502627A,NA,A2,0,Picrotoxin is replaced with Tween 20,LDH
+20210901,MW502627A,NA,A3,0,Picrotoxin is replaced with Tween 20,LDH
+20210901,MW502627A,NA,A4,0,Picrotoxin is replaced with Tween 20,LDH
+20210901,MW502627A,NA,A5,0,Picrotoxin is replaced with Tween 20,LDH
+20210901,MW502627A,NA,A6,0,Picrotoxin is replaced with Tween 20,LDH
+20210901,MW502627A,NA,A7,0,Picrotoxin is replaced with Tween 20,LDH
+20210901,MW502627A,NA,A8,0,Picrotoxin is replaced with Tween 20,LDH
+20210901,MW502627A,NA,A1,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,A1,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B1,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B2,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B3,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B4,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B5,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B6,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B7,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B8,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C1,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C2,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C3,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C4,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C5,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C6,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C7,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,C8,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D1,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D2,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D3,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D4,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D5,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D6,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D7,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,D8,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E1,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E2,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E3,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E4,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E5,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E6,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E7,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,E8,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F1,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F2,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F3,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F4,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F5,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F6,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F7,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,F8,0,LDH and CTB timepoint differs from other experiments,LDH
+20210901,MW502627A,NA,B1,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B2,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B3,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B4,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B5,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B6,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B7,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,B8,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C1,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C2,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C3,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C4,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C5,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C6,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C7,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,C8,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D1,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D2,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D3,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D4,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D5,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D6,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D7,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,D8,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E1,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E2,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E3,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E4,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E5,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E6,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E7,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,E8,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F1,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F2,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F3,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F4,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F5,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F6,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F7,0,LDH and CTB timepoint differs from other experiments,CTB
+20210901,MW502627A,NA,F8,0,LDH and CTB timepoint differs from other experiments,CTB
+20211006,MWB76,NA,A2,0,Dosed with wrong concentration,mea
+20211006,MWB76,NA,A3,0,Dosed with wrong concentration,mea
+20211006,MWB76,NA,A4,0,Dosed with wrong concentration,mea
+20211006,MWB76,NA,A5,0,Dosed with wrong concentration,mea
+20211006,MWB76,NA,A6,0,Dosed with wrong concentration,mea
+20211006,MWB76,NA,A7,0,Dosed with wrong concentration,mea
+20211006,MWB76,NA,A8,0,Dosed with wrong concentration,mea
+20211006,MW501824A,NA,A2,0,Dosed with wrong concentration,mea
+20211006,MW501824A,NA,A3,0,Dosed with wrong concentration,mea
+20211006,MW501824A,NA,A4,0,Dosed with wrong concentration,mea
+20211006,MW501824A,NA,A5,0,Dosed with wrong concentration,mea
+20211006,MW501824A,NA,A6,0,Dosed with wrong concentration,mea
+20211006,MW501824A,NA,A7,0,Dosed with wrong concentration,mea
+20211006,MW501824A,NA,A8,0,Dosed with wrong concentration,mea
+20211006,MWB76,NA,A2,0,Dosed with wrong concentration,CTB
+20211006,MWB76,NA,A3,0,Dosed with wrong concentration,CTB
+20211006,MWB76,NA,A4,0,Dosed with wrong concentration,CTB
+20211006,MWB76,NA,A5,0,Dosed with wrong concentration,CTB
+20211006,MWB76,NA,A6,0,Dosed with wrong concentration,CTB
+20211006,MWB76,NA,A7,0,Dosed with wrong concentration,CTB
+20211006,MWB76,NA,A8,0,Dosed with wrong concentration,CTB
+20211006,MW501824A,NA,A2,0,Dosed with wrong concentration,CTB
+20211006,MW501824A,NA,A3,0,Dosed with wrong concentration,CTB
+20211006,MW501824A,NA,A4,0,Dosed with wrong concentration,CTB
+20211006,MW501824A,NA,A5,0,Dosed with wrong concentration,CTB
+20211006,MW501824A,NA,A6,0,Dosed with wrong concentration,CTB
+20211006,MW501824A,NA,A7,0,Dosed with wrong concentration,CTB
+20211006,MW501824A,NA,A8,0,Dosed with wrong concentration,CTB
+20211006,MWB76,NA,A2,0,Dosed with wrong concentration,LDH
+20211006,MWB76,NA,A3,0,Dosed with wrong concentration,LDH
+20211006,MWB76,NA,A4,0,Dosed with wrong concentration,LDH
+20211006,MWB76,NA,A5,0,Dosed with wrong concentration,LDH
+20211006,MWB76,NA,A6,0,Dosed with wrong concentration,LDH
+20211006,MWB76,NA,A7,0,Dosed with wrong concentration,LDH
+20211006,MWB76,NA,A8,0,Dosed with wrong concentration,LDH
+20211006,MW501824A,NA,A2,0,Dosed with wrong concentration,LDH
+20211006,MW501824A,NA,A3,0,Dosed with wrong concentration,LDH
+20211006,MW501824A,NA,A4,0,Dosed with wrong concentration,LDH
+20211006,MW501824A,NA,A5,0,Dosed with wrong concentration,LDH
+20211006,MW501824A,NA,A6,0,Dosed with wrong concentration,LDH
+20211006,MW501824A,NA,A7,0,Dosed with wrong concentration,LDH
+20211006,MW501824A,NA,A8,0,Dosed with wrong concentration,LDH

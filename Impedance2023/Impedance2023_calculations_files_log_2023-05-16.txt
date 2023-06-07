@@ -1,0 +1,13 @@
+ files used for MEA acute pre-processing for TCPL
+File types: calculations
+Created with the script gather_files-functions.R
+Date ran: 2023-05-16 17:23:02
+Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
+
+Collected 4 files from 1 directories.
+
+L:/Lab/NHEERL_MEA/Project - Impedance/Impedance Paper/prep for tcpl pipeline/Acute
+L:\Lab\NHEERL_MEA\Project - Impedance\Impedance Paper\prep for tcpl pipeline\Acute\IM_20210901_MW502627A_Calculations.xlsx
+L:\Lab\NHEERL_MEA\Project - Impedance\Impedance Paper\prep for tcpl pipeline\Acute\IM_20210922_MW501729A_Calculations.xlsx
+L:\Lab\NHEERL_MEA\Project - Impedance\Impedance Paper\prep for tcpl pipeline\Acute\IM_20210929_MW501730A_Calculations.xlsx
+L:\Lab\NHEERL_MEA\Project - Impedance\Impedance Paper\prep for tcpl pipeline\Acute\IM_20211006_Impedance_Calculations.xlsx
