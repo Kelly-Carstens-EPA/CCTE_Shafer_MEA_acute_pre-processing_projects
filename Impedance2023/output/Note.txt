@@ -1,0 +1,10 @@
+In dat3, impedance data at 72h(taken at the same timepoint with LDH and CTB) are combined with cytodat and later combined with neural data
+CTB, LDH and IMP data can be compared (all three different assays at the same timpoint)
+
+In imp_dat, there is baseline and treated(all timepoint) data available.
+Can plot graphs looking at each compound at each concentration over time. (ignore/take into account of the baseline)
+
+In imp_AUC, AUC calculated using treated(9 timepoints)
+I did this to mimic whatever that is done for NFA
+
+*data is kinda patchy, some endpoints does not have same number of replicates, due to dosing error and switching compound(Picro to Tween 20), and different timepoint collection for cytotoxicity data
