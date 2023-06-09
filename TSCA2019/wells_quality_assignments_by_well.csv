@@ -1,7 +1,4 @@
 culture.date,plate.id,well,wllq,wllq_notes,source,affected_endpoints
-20210414,MW75-8114,H1,0,"Had insufficient substrate to have 3 full Lysis wells; which of the 3 labelled ""Lysis"" wells on plate that did not contain Lysis was not recorded",lab notebook,LDH
-20210414,MW75-8114,H2,0,"Had insufficient substrate to have 3 full Lysis wells; which of the 3 labelled ""Lysis"" wells on plate that did not contain Lysis was not recorded",lab notebook,LDH
-20210414,MW75-8114,H3,0,"Had insufficient substrate to have 3 full Lysis wells; which of the 3 labelled ""Lysis"" wells on plate that did not contain Lysis was not recorded",lab notebook,LDH
 20210210,MW71-7011,A1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook,"mea,LDH,CTB"
 20210210,MW71-7011,A2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook,"mea,LDH,CTB"
 20210210,MW71-7011,A3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook,"mea,LDH,CTB"

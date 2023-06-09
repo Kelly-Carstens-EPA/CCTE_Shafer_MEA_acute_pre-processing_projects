@@ -1,4 +1,4 @@
-read_acute_CTB_raw_data <- function(filei) {
+read_acute_AlamarBlue_raw_data <- function(filei) {
   
   dat <- suppressMessages(readxl::read_xls(filei, col_names = FALSE, 
                                            col_types = 'text')) # suppress message of renaming columns

@@ -245,10 +245,10 @@ if (select.raw.cytotox.files) {
   
   # (if any, edit selection or rename files if missing "LDH" in name)
   
-  # Check that there are exactly 3 CTB files per group
-  num.CTB.per.group <- sapply(raw.cytotox.files, function(seti) sum(!grepl('LDH',unlist(seti))))
-  cat('Groups that do not have exactly 3 CTB file:')
-  num.CTB.per.group[num.CTB.per.group != 3]
+  # Check that there are exactly 3 AB files per group
+  num.AB.per.group <- sapply(raw.cytotox.files, function(seti) sum(!grepl('LDH',unlist(seti))))
+  cat('Groups that do not have exactly 3 AB file:')
+  num.AB.per.group[num.AB.per.group != 3]
   
   # Write files to log
   writeLogFile(unlist(raw.cytotox.files), dataset_title, files_type = 'raw_cytotox')
@@ -655,7 +655,7 @@ raw.cytotox.files <- read_files(dataset_title, files_type = 'raw_cytotox')
 ```
 
 
-Note assumptions for LDH and CTB raw data file reading functions:
+Note assumptions for LDH and AB raw data file reading functions:
 
 **LDH**
 
@@ -667,9 +667,9 @@ The function `read_acute_LDH_raw_data` assumes that:
 * Raw data values for each plate start 1 row below every occurrence of the word "Temperature" and continue for the next 7 rows
 * Raw data values for all plates are in columns 3 - 14
 
-**CTB**:
+**AB**:
 
-The function `read_acute_CTB_raw_data` assumes that:
+The function `read_acute_AlamarBlue_raw_data` assumes that:
 * 1 plate per file
 * Plates are 96-well (8x12)
 * There is a cell with the letter "A" in the first column that signifies the first row of the plate
@@ -700,33 +700,33 @@ for (filei in raw.cytotox.files.LDH) {
 setdiff(basename(raw.cytotox.files.LDH), rawdat.LDH$filename)
 ```
 
-Read raw data from CTB files
+Read raw data from AB files
 ```{r}
-raw.cytotox.files.CTB <- raw.cytotox.files[!grepl('LDH',raw.cytotox.files)]
-rawdat.CTB <- data.table()
-for (filei in raw.cytotox.files.CTB) {
-  add.tb <- read_acute_CTB_raw_data(filei)
-  rawdat.CTB <- rbind(rawdat.CTB, add.tb)
+raw.cytotox.files.AB <- raw.cytotox.files[!grepl('LDH',raw.cytotox.files)]
+rawdat.AB <- data.table()
+for (filei in raw.cytotox.files.AB) {
+  add.tb <- read_acute_AlamarBlue_raw_data(filei)
+  rawdat.AB <- rbind(rawdat.AB, add.tb)
 }
 
 # # To debug an individual file:
 # filei
-# debugonce(read_acute_CTB_raw_data)
-# add.tb <- read_acute_CTB_raw_data(filei)
+# debugonce(read_acute_AlamarBlue_data)
+# add.tb <- read_acute_AlamarBlue_data(filei)
 
-# Note any CTB files that could not be read (manually check that these data values have been correctly copied over to the Calculations file)
-setdiff(basename(raw.cytotox.files.CTB), rawdat.CTB$filename)
+# Note any AB files that could not be read (manually check that these data values have been correctly copied over to the Calculations file)
+setdiff(basename(raw.cytotox.files.AB), rawdat.AB$filename)
 ```
 
 Confirm expected # of raw data values per file
 
 ```{r}
-rawdat.CTB[, .N, by =.(filename)][N != 96]
+rawdat.AB[, .N, by =.(filename)][N != 96]
 rawdat.LDH[, .N, by =.(filename)][N != 96*3]
 ```
 
 
-Get plate IDs for raw CTB and LDH data, then combine
+Get plate IDs for raw AB and LDH data, then combine
 
 ```{r}
 # LDH
@@ -737,17 +737,17 @@ rawdat.LDH[, plate.id := stri_extract(plate.info, regex = '[0-9]{1,2}\\-[0-9]{3,
 rawdat.LDH[, plate.id := paste0('MW',plate.id)]
 rawdat.LDH[, .N, by = .(plate.id)] # confirm these looks correct
 
-# CTB
+# AB
 
 # Get plate.id from filename as:
 # (1-2 digits)-(3-4 digits)
-rawdat.CTB[, plate.id := stri_extract(filename, regex = '[0-9]{1,2}\\-[0-9]{3,4}')]
-rawdat.CTB[, plate.id := paste0('MW',plate.id)]
-rawdat.CTB[, .N, by = .(plate.id)] # confirm these looks correct
+rawdat.AB[, plate.id := stri_extract(filename, regex = '[0-9]{1,2}\\-[0-9]{3,4}')]
+rawdat.AB[, plate.id := paste0('MW',plate.id)]
+rawdat.AB[, .N, by = .(plate.id)] # confirm these looks correct
 
 
 # Combine cyto data
-rawdat.cytotox <- rbind(rawdat.LDH, rawdat.CTB, fill = T)
+rawdat.cytotox <- rbind(rawdat.LDH, rawdat.AB, fill = T)
 ```
 
 Get the culture date from the folders for raw cytotox data
@@ -767,7 +767,7 @@ rawdat.cytotox <- merge(rawdat.cytotox, files.tb,
 
 # Confirm 3 unique plates of each assay per group
 rawdat.cytotox[, .(num_unique_plate_ids = length(unique(plate.id))), by = .(acsn, culture_folder, group_char)][num_unique_plate_ids != 3]
-# (if any cases, could be that there was a typo in the plate.id in the filename for CTB or in the file header for LDH. Check it out and correct as needed)
+# (if any cases, could be that there was a typo in the plate.id in the filename for AB or in the file header for LDH. Check it out and correct as needed)
 ```
 
 Add the official acnm's
@@ -779,8 +779,8 @@ rawdat.cytotox <- merge(rawdat.cytotox, acsn_map[, .(acsn, acnm)], by = 'acsn', 
 
 ## Re-orient plates as needed
 
-* For G11, reverse the plate orientation for CTB Plate 71-7015 (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
-* For G20 plate 75-8201, reverse the plate orientation for CTB (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
+* For G11, reverse the plate orientation for AB Plate 71-7015 (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
+* For G20 plate 75-8201, reverse the plate orientation for AB (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
 
 ```{r}
 # confirm all rows and cols are defined
@@ -792,26 +792,50 @@ rawdat.cytotox[, well_org := paste0(LETTERS[rowi],coli)]
 rawdat.cytotox[, `:=`(rowi_org  = rowi, coli_org = coli)]
 
 # Switch the rows and columns for the upper left 48 wells
-rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'CTB' 
+rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'AB' 
                & rowi %in% c(1:6) & coli %in% c(1:8), 
                `:=`(rowi = 7 - rowi_org,
                     coli = 9 - coli_org)]
-rawdat.cytotox[group_int == '20' & plate.id == 'MW75-8201' & acsn == 'CTB'
+rawdat.cytotox[group_int == '20' & plate.id == 'MW75-8201' & acsn == 'AB'
                & rowi %in% c(1:6) & coli %in% c(1:8), 
                `:=`(rowi = 7 - rowi_org,
                     coli = 9 - coli_org)]
 ```
 
-Visually confirm G11 MW71-7015 looks correct
+Visually confirm G11 MW71-7015 rotation looks correct
 
 ```{r}
-test.plate <- dcast(rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'CTB'], rowi ~ coli, value.var = 'well_org')
+test.plate <- dcast(rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'AB'], rowi ~ coli, value.var = 'well_org')
 test.plate
 ```
 
+
+Since the calculations files have not already been corrected to reflect the rotation (since this is difficult to do in Excel), I will create .csv files with the raw values that have been rotated, then manually copy-paste in the Calculations files.
+
+
+```{r}
+# Group 11, plate 7015
+fullname.org <- rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'AB', unique(fullname)]
+fullname.adj <- sub('\\.xls','_upper_48well_raw_vals_rotated_180degrees.csv',fullname.org)
+tb1 <- dcast(rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'AB'], 
+             rowi ~ coli, value.var = 'rval_not_blank_corrected')
+tb1[, row_char := LETTERS[rowi]]
+write.csv(tb1[, c('row_char', 1:12)], row.names = F, file = fullname.adj)
+
+# Group 20, plate MW75-8201
+fullname.org <- rawdat.cytotox[group_int == '20' & plate.id == 'MW75-8201' & acsn == 'AB', unique(fullname)]
+fullname.adj <- sub('\\.xls','_upper_48well_raw_vals_rotated_180degrees.csv',fullname.org)
+tb1 <- dcast(rawdat.cytotox[group_int == '20' & plate.id == 'MW75-8201' & acsn == 'AB'], 
+             rowi ~ coli, value.var = 'rval_not_blank_corrected')
+tb1[, row_char := LETTERS[rowi]]
+write.csv(tb1[, c('row_char', 1:12)], row.names = F, file = fullname.adj)
+
+```
+
+
 ## Calculate blank-corrected values
 
-Calculate average of blank well.s Blank wells in both assays are in G1, 2 and 3
+Calculate average of blank wells. Blank wells in both assays are in G1, 2 and 3
 
 ```{r}
 # check that there are 3 non-NA blanks per plate
@@ -819,7 +843,21 @@ stopifnot(nrow(rawdat.cytotox[, .(sum(rowi == 7 & coli %in% c(1:3) & !is.na(rval
 
 rawdat.cytotox[, blank_well_avg := mean(rval_not_blank_corrected[rowi == 7 & coli %in% c(1:3)], na.rm = T),
                by = .(culture.date, plate.id, acsn)]
+
 ```
+
+
+(Manually check well quality tables to see if any blank wells have wllq == 0).
+
+-> Culture 20210414 plate 75-8114 LDH well G3 has wllq == 0, so will exclude that well from blank well calculation
+
+```{r}
+rawdat.cytotox[culture.date == '20210414' & plate.id == 'MW75-8114' & acsn == 'LDH' & rowi %in% c(7) & coli %in% 1:3, .(rowi, coli, rval_not_blank_corrected)]
+rawdat.cytotox[culture.date == '20210414' & plate.id == 'MW75-8114' & acsn == 'LDH',  
+               blank_well_avg := mean(rval_not_blank_corrected[rowi == 7 & coli %in% c(1:2)], na.rm = T),
+               by = .(culture.date, plate.id, acsn)]
+```
+
 
 Subtract blank wells from all other wells
 
@@ -882,13 +920,11 @@ cytodat <- merge(cytodat, files.tb,
 
 # Confirm 3 unique plates of each assay per group
 cytodat[, .(num_unique_plate_ids = length(unique(plate.id))), by = .(acnm, culture_folder, group_char)][num_unique_plate_ids != 3]
-# (if any cases, could be that there was a typo in the plate.id in the filename for CTB or in the file header for LDH. Check it out and correct as needed)
+# (if any cases, could be that there was a typo in the plate.id in the filename for AB or in the file header for LDH. Check it out and correct as needed)
 ```
 
 
 ## Compare with raw cytotoxicity data, resolve discrepancies
-
-
 
 ```{r}
 # Which rows to merge? (rawdat will contain some empty wells that are not needed)
@@ -896,27 +932,29 @@ cytodat[grepl('AB',acnm), .N, by = .(rowi, coli)]
 
 # Subset rawdat.cytotox to wells we actually want to use
 rawdat.cytotox[, use_wells := 0]
-rawdat.cytotox[acsn == 'CTB' & rowi %in% c(1:6) & coli %in% c(1:8), use_wells:=1]
+rawdat.cytotox[acsn == 'AB' & rowi %in% c(1:6) & coli %in% c(1:8), use_wells:=1]
 rawdat.cytotox[acsn == 'LDH' & ((rowi %in% c(1:6) & coli %in% c(1:8)) |
                                   (rowi == 7 & coli %in% c(4,5)) |
                                   (rowi == 8 & coli %in% c(1:6))), use_wells := 1]
-rawdat.cytotox <- rawdat.cytotox[use_wells == 1]
+rawdat.cytotox.tomerge <- rawdat.cytotox[use_wells == 1]
 
 # Prepare to merge
-cat(intersect(names(cytodat), names(rawdat.cytotox)), sep = '", "')
+cat(intersect(names(cytodat), names(rawdat.cytotox.tomerge)), sep = '", "')
 cytodat[, in_calc := 1]
-rawdat.cytotox[, in_raw := 1]
+rawdat.cytotox.tomerge[, in_raw := 1]
 nrow(cytodat)
-nrow(rawdat.cytotox)
-comp.dat <- merge(cytodat, rawdat.cytotox, by = c("plate.id", "rowi", "coli", "rval", "acnm",  "culture_folder", "group_char", "group_int", "culture.date"),
+nrow(rawdat.cytotox.tomerge)
+comp.dat <- merge(cytodat, rawdat.cytotox.tomerge, by = c("plate.id", "rowi", "coli", "acnm",  "culture_folder", "group_char", "group_int", "culture.date"),
                   suffixies = c('.calc','.raw'), all = T)
+```
 
-# Test data presence agreement
+### Test data presence agreement
+```{r}
 comp.dat[, .N, by = .(in_calc, in_raw)]
-#    in_calc in_raw    N
-# 1:       1      1 6927
-# 2:      NA      1 4617
-# 3:       1     NA 4616
+#    in_calc in_raw     N
+# 1:       1      1 11335
+# 2:      NA      1   209
+# 3:       1     NA   208
 
 setdiff(cytodat$culture.date, rawdat.cytotox$culture.date) # empty
 setdiff(rawdat.cytotox$culture.date, cytodat$culture.date) # empty
@@ -929,22 +967,22 @@ comp.dat[plate.id %in% c("MW75-7519","MW75-9201",
 
 ```
 
-For G12, in the lab notebook, plate 1 was originally written as 75-7519. Then it was crossed out and replaced with 75-5819 on 3/23/21 and initialed by Theresa. Therefore, I think 75-7519 in the Calculations file was a typo. Will replace that now
+For G12, in the lab notebook, plate 1 was originally written as 75-7519. Then it was crossed out and replaced with 75-5819 on 3/23/21 and initialed by Theresa. Therefore, I think 75-7519 in the Calculations file was a typo. Will update that here and in the Calculations file now.
 
 ```{r}
 cytodat[culture.date == '20210310' & group_int == 12 & plate.id == 'MW75-7519', plate.id := 'MW75-5819']
 ```
 
-For G36 - lab notebook and neural stats compiler files indicate that the plate.id should be 75-9201, not 75-9121, so we'll go with that.
+For G36 - lab notebook and neural stats compiler files indicate that the plate.id should be 75-9201, not 75-9121, so I think MW75-9201 is correct.
 
 ```{r}
-rawdat.cytotox[group_int == 36 & plate.id == 'MW75-9121', plate.id := 'MW75-9201']
+rawdat.cytotox.tomerge[group_int == 36 & plate.id == 'MW75-9121', plate.id := 'MW75-9201']
 ```
 
 Re-merge
 
 ```{r}
-comp.dat <- merge(cytodat, rawdat.cytotox, by = c("plate.id", "rowi", "coli", "acnm",  "culture_folder", "group_char", "group_int", "culture.date"),
+comp.dat <- merge(cytodat, rawdat.cytotox.tomerge, by = c("plate.id", "rowi", "coli", "acnm",  "culture_folder", "group_char", "group_int", "culture.date"),
                   suffixies = c('.calc','.raw'), all = T)
 
 # Test data presence agreement
@@ -958,81 +996,101 @@ comp.dat[is.na(in_calc), .(acnm, culture.date, plate.id, rowi, coli, rval.x, rva
 # 1: CCTE_Shafer_MEA_acute_LDH     20210414 MW75-8114    8    6     NA 0.8766333
 
 ```
-Ah, yes, this is the plate where there were only two 1/2 lysis control wells instead of the usual 3.
-So this is as expected
+Ah, yes, this is the plate where there were only two 1/2 lysis control wells instead of the usual 3. Wllq is 0 for this well regardless, so no updates are needed.
 
-Compare rvals
+### Compare rvals
 
 ```{r}
-comp.dat[, rval.rnd.x := signif(rval.x, 3)]
-comp.dat[, rval.rnd.y := signif(rval.y, 3)]
 comp.dat[, rval_pct_diff := abs(rval.x - rval.y)/((rval.x + rval.y)*0.5)*100]
+comp.dat[rval_pct_diff >= 0.5, 
+         .(.N, affected = paste0(unique(acsn),collapse = ","), 
+           max_pct_diff = max(rval_pct_diff), 
+           max_raw_diff = max(abs(rval.x - rval.y))), by = .(group_int, culture.date, plate.id)][order(culture.date, group_int)]
+# output as of 6/5/2023 at 6:17pm:
+#     group_int culture.date  plate.id  N affected max_pct_diff max_raw_diff
+#  1:         1     20201104 MW71-7106 17      LDH  2955.811277 8.562000e-01
+#  2:         6     20210120 MW72-8208 18      LDH  1199.556541 9.918333e-01
+#  3:         7     20210120 MW72-8212 20      LDH  3424.811219 1.058267e+00
+#  4:        13     20210310 MW75-8003  1      LDH   200.000000 2.775558e-17
+#  5:        20     20210428 MW75-8201 19      LDH   200.000000 4.863333e-01
+#  6:        20     20210428 MW75-8202 64   AB,LDH   319.130435 7.477667e+03
+#  7:        20     20210428 MW75-8203 62   AB,LDH   200.000000 6.216667e+03
+#  8:        21     20210428 MW75-8204 66   AB,LDH   200.000000 1.368600e+04
+#  9:        21     20210428 MW75-8205 65   AB,LDH   200.000000 1.244133e+04
+# 10:        21     20210428 MW75-8206 68   AB,LDH   200.000000 1.301900e+04
+# 11:        26     20210526 MW75-8219 47       AB     4.042701 9.776667e+02
+# 12:        31     20210630 MW78-4406 48       AB   200.000000 1.235033e+04
 
-comp.dat[rval.rnd.x != rval.rnd.y, .N, by = .(acnm)]
-
-comp.dat[rval.rnd.x != rval.rnd.y, .N, by = .(culture.date, plate.id)]
 ```
 
+**Review all discrepancies**
 
-Where we expect to see differences
+* Group 1 - The blank wells were abnormally high for Group 1, plate 3 - therefore, the blanks from plate 2 were used instead (2/3 blanks were ~10X those in plate 2). I agree with this decision.
+* Group 6 - similiar situation, average of blanks taken from plate 2
+* G7 - blanks for plate 2 taken from plate 1
+* G13 - this is fine, actually difference is negligible (% diff just seems large because values are close to 0).
+* G20 - I confirmed with Seline 5/9/23 that she just forget to copy over the raw data values into the Calcuations file for this group . I will update that Calculations file now. (Note that for plate 1, AB, raw values already updated when we updated due to reversed plate orientation).
+* G21- again, I confirmed with Seline 5/9/23 that she just forget to copy over the raw data values into the Calcuations file for this group . I will update that Calculations file now.
+* G26, AB - blanks taken from plate 2
+* G31 - raw data for plate 3 in calculations file matches data for plate 3 in Group 30. So this portion of the excel spreadsheet probably just go missed.
 
-* For G11, reverse the plate orientation for CTB Plate 71-7015 (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
-* For G20 plate 75-8201, reverse the plate orientation for CTB (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
-* G20 and G21 - raw files are right, just weren't copy & pasted into calc files
+Read in data from calculations files again to confirm updates
 
 ```{r}
-comp.dat[, differences_expected := 0]
+cytodat <- getAllCytoData(dataset_title)
+cytodat[, in_calc := 1]
 
-# differences in plate orientation, fixed in rawdat
-comp.dat[group_int == 11 & grepl('AB',acnm) & plate.id == 'MW71-7015', differences_expected := 1]
-comp.dat[group_int == 20 & grepl('AB',acnm) & plate.id == 'MW75-8201', differences_expected := 1]
+# Get culture dates
+cytodat <- merge(cytodat, files.tb, 
+                 by.x = 'srcf', by.y = 'basename', all.x = T)
 
-# known lack of copying files into calc files
-comp.dat[group_int %in% c(20,21), differences_expected := 1]
+# Confirm 3 unique plates of each assay per group
+cytodat[, .(num_unique_plate_ids = length(unique(plate.id))), by = .(acnm, culture_folder, group_char)][num_unique_plate_ids != 3]
 
-# rvals may differ by a small amont due to rounding - this if fine
-# wnat to view cases with more significant differences
-comp.dat[, .N, by = .(rvals_agree = rval_pct_diff < 0.5, 
-                      differences_expected)]
-#    rvals_agree_v2 differences_expected     N
-# 1:           TRUE                    0 10665
-# 2:          FALSE                    1   435
-# 3:           TRUE                    1   237
-# 4:          FALSE                    0   204
-# 5:             NA                    0     3
+# re-merge
+comp.dat <- merge(cytodat, rawdat.cytotox.tomerge, by = c("plate.id", "rowi", "coli", "acnm",  "culture_folder", "group_char", "group_int", "culture.date"),
+                  suffixies = c('.calc','.raw'), all = T)
+
+# Confirm data presence alignment
+comp.dat[, .N, by = .(in_calc, in_raw)]
+comp.dat[is.na(in_calc), .(acnm, culture.date, plate.id, rowi, coli, rval.x, rval.y)]
+#                         acnm culture.date  plate.id rowi coli rval.x    rval.y
+# 1: CCTE_Shafer_MEA_acute_LDH     20210414 MW75-8114    8    6     NA 0.8766333
+# wllq is 0 here, so no updates needed
+
+# Compare rvals
+comp.dat[, rval_pct_diff := abs(rval.x - rval.y)/((rval.x + rval.y)*0.5)*100]
+comp.dat[rval_pct_diff >= 0.5, 
+         .(.N, affected = paste0(unique(acsn),collapse = ","), 
+           max_pct_diff = max(rval_pct_diff), 
+           max_raw_diff = max(abs(rval.x - rval.y))), by = .(group_int, culture.date, plate.id)][order(culture.date, group_int)]
+#    group_int culture.date  plate.id  N affected max_pct_diff max_raw_diff
+# 1:         1     20201104 MW71-7106 17      LDH  2955.811277 8.562000e-01
+# 2:         6     20210120 MW72-8208 18      LDH  1199.556541 9.918333e-01
+# 3:         7     20210120 MW72-8212 20      LDH  3424.811219 1.058267e+00
+# 4:        13     20210310 MW75-8003  1      LDH   200.000000 2.775558e-17
+# 5:        26     20210526 MW75-8219 47       AB     4.042701 9.776667e+02
+# 6:        31     20210630 MW78-4406 48       AB   200.000000 1.235033e+04
 ```
 
-So there are 435 cases were differences are not expected, but are present. Let's confirm that the rawdat.cytotox is correct here (rather than some other issue I wasn't aware of)
-
-```{r}
-comp.dat[differences_expected == 0 & rval_pct_diff >= 0.5, .(.N, affected = paste0(unique(acsn),collapse = ","), max_diff = max(rval_pct_diff)), by = .(group_int, culture.date, plate.id)][order(culture.date, group_int)]
-#    group_int culture.date  plate.id  N affected    max_diff
-# 1:         1     20201104 MW71-7106 17      LDH 2955.811277
-# 2:         6     20210120 MW72-8208 18      LDH 1199.556541
-# 3:         7     20210120 MW72-8212 20      LDH 3424.811219
-# 4:        13     20210310 MW75-8003  1      LDH  200.000000
-# 5:        19     20210414 MW75-8114 53      LDH  200.000000
-# 6:        26     20210526 MW75-8219 47       AB    4.042701
-# 7:        31     20210630 MW78-4406 48       AB  200.000000
-
-# See group1
-comp.dat[differences_expected == 0 & rval_pct_diff >= 0.5, .(.N, affected = paste0(unique(acsn),collapse = ","), max_diff = max(rval_pct_diff)), by = .(group_int, culture.date, plate.id)][order(culture.date, group_int)]
+Good, now the only discrepancies correspond to the cases where a different plate was used to perform the blank-correction.
 
 
-```
+So there are some pieces of data that I would have got wrong if I had only looked at the calc files (i.e., where the raw data wasn't copied), and there are other pieces of data i would have missed if without the calc files (i.e., whether to use the blanks from another plate.)
+
+To do:
+* Summarize canonical course of action in instructions (i.e., read in both files, then compare, looking out for X; ultimately want calc files to be correct if possible and will plan to ultimately read data from those)
+* Review what you've done here, condense where possible/helpful
+* Officially have name cytotox data table, rm others
+* Hmm, that seems like a lot of negatives/zero's for the LDH... is this right? Is this an indication of badness fro the assay? We'll check it out (but don't spend too much time - consider o items and where this woudl fit in importance-wise)
+* See onenote for next steps!
 
 
-RESUME HERE
-
-* Compare raw & calc file discrepancies. Probably will default to raw, but wanna check
-* Hmm, that seems like a lot of zero's for the LDH... is this right? Is this an indication of badness fro the assay? We'll check it out
-
-
-SIMPLEST approach:
+SIMPLEST approach: (old)
 
 * Take the raw cytotox data
 * Get the meta data from the calc files
-* Look at distribution of lysis control wells (need to develop a cutoff, as Kathleen said 5/31)
+* Look at distribution of lysis control wells (need to develop a cutoff, as Kathleen said 5/31). Should I read in percent of control to discern which control well she usually uses? Did Seline even look at that? M Communicate with Kathleen that I haven't been usign her stuff up to this point... is that okay? (probs triage for later)
 
 
 
@@ -1112,7 +1170,7 @@ view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Lab
 # first, 50uL of culture Media from each well in MEA plate is transfered to LDH plate (so F1 just contains Media in LDH plate)
 # then 20uL of Media is added to F1 in the MEA plate. Then (all?) of the contents are removed and mixed
 # a Media/Alamar Blue mixture is added to eadch well of MEA plate
-# then culture Media/Blue mixutre is taken from MEA plates to CTB plates
+# then culture Media/Blue mixutre is taken from MEA plates to AB plates
 # all this to say, I understand now why the 
 # The only time when well F1 would have Lysis in the LDH assay is the same time when Lysis is added before the second recording,
 # which was already clearly marked in the Group 1 file. 
@@ -1220,6 +1278,17 @@ cat("\ndat4 saved on:",as.character.Date(Sys.Date()), "\n")
 
 # you're done!
 
+```
+
+# Merge in wllq tables
+
+```{r}
+wllq.tb.by.well <- as.data.table(read.csv(file.path(dataset_title, 'wells_quality_assignments_by_well.csv')))
+wllq.tb.by.well.ldh <- wllq.tb.by.well[grepl('LDH',affected_endpoints)]
+wllq.tb.by.well.ldh[, acsn := 'LDH']
+wllq.tb.by.well.AB <- wllq.tb.by.well[grepl('(AB)|(CTB)',affected_endpoints)]
+wllq.tb.by.well.AB[, acsn := 'AB']
+wllq.tb.by.well.cyto <- rbind(wllq.tb.by.well.ldh, wllq.tb.by.well.AB)
 ```
 
 # Scrap
