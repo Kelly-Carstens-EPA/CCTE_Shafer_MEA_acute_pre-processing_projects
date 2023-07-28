@@ -1,11 +1,11 @@
 # combine the cyto and neural stats data
 
-combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
+combineNeuralAndCyto <- function(cytodat, main.output.dir, project_name) {
 
   # read the data from the most recent file in main.ouput.dir
   cat("\nLevel 3 - Combine Cyto and Neural Stats Data; Initialize treatment, conc, and wllq\n")
   cat("\nLoading...\n")
-  dat2 <- get_latest_dat(lvl = "dat2",dataset_title, main.dir = dirname(main.output.dir))
+  dat2 <- get_latest_dat(lvl = "dat2",project_name, main.dir = dirname(main.output.dir))
   # dat2_files <- list.files(path = paste0(main.output.dir,"/output"), pattern = paste0("_dat2_"), recursive = F, full.names = T)
   # dat2_file <- dat2_files[order(basename(dat2_files), decreasing = T)[1]] # get the most recent file
   # load(dat2_file)
@@ -77,7 +77,7 @@ combineNeuralAndCyto <- function(cytodat, main.output.dir, dataset_title) {
   dat3[, rval := as.numeric(rval)]
   dat3[, date_plate := NULL]
   
-  file_name <- paste0(main.output.dir,"/output/",dataset_title,"_dat3_",as.character.Date(Sys.Date()),".RData")
+  file_name <- paste0(main.output.dir,"/output/",project_name,"_dat3_",as.character.Date(Sys.Date()),".RData")
   save(dat3, file = file_name)
   cat(basename(file_name), " is ready.\n",sep="")
 }

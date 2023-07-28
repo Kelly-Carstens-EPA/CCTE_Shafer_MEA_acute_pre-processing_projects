@@ -231,7 +231,7 @@ data_checks <- function(dat4) {
   # by acnm
   default_oma <- par("oma")
   par(oma = c(default_oma[1]+5, default_oma[2:4]))
-  boxplot(rval ~ sub("CCTE_Shafer_MEA_acute_","",acnm), dat4[wllq == 1 & !grepl("(AB)|(LDH)",acnm)], main = paste0("All MEA components for ",dataset_title,"\nwhere wllq=1 (rval's above 300 not shown)"), 
+  boxplot(rval ~ sub("CCTE_Shafer_MEA_acute_","",acnm), dat4[wllq == 1 & !grepl("(AB)|(LDH)",acnm)], main = paste0("All MEA components for ",project_name,"\nwhere wllq=1 (rval's above 300 not shown)"), 
           ylim = c(-100, 300), las = 2, cex.axis = 0.6, xlab = "")
   par(oma = default_oma)
   
@@ -241,33 +241,33 @@ data_checks <- function(dat4) {
                            levels = c(dat4[wllt!="t",sort(unique(wllt))], paste0(dat4[wllt=="t",sort(unique(signif(conc,digits=1)))])), ordered = T)
   stripchart(rval ~ wllt_conc, dat4[wllq == 1 & !grepl("(AB)|(LDH)",acnm) & rval < 300], 
              vertical = T, pch = 1, method = "jitter", xlab = "wllt or approx. conc for 't' wells", ylab = "rval (percent change in activity)", col = "lightblue", 
-             main = paste0("All MEA Components by conc for ",dataset_title,"\nwhere wllq=1 and rval < 300"))
+             main = paste0("All MEA Components by conc for ",project_name,"\nwhere wllq=1 and rval < 300"))
   boxplot(rval ~ wllt_conc, dat4[wllq == 1 & !grepl("(AB)|(LDH)",acnm) & rval < 300], outline = F, col = "transparent", boxwex = 0.5, add = T)
   abline(h = 0, lty = "dashed")
   
   # View the extent of extreme outliers (usually due to very small baseline value)
   stripchart(rval ~ wllt_conc, dat4[wllq == 1 & !grepl("(AB)|(LDH)",acnm) & rval >= 300], 
              vertical = T, pch = 1, method = "jitter", xlab = "wllt or approx. conc for 't' wells", col = "blue", 
-             main = paste0("Outlier MEA Points in ",dataset_title,"\nwhere wllq=1 and rval >= 300"))
+             main = paste0("Outlier MEA Points in ",project_name,"\nwhere wllq=1 and rval >= 300"))
   cat("\nSummary of MEA rval's above 300% change by acnm (for wllt 't' or 'n'):\n")
   print(dat4[wllt %in% c("t","n") & wllq == 1 & !grepl("(AB)|(LDH)",acnm) & rval >= 300, .(wllts = paste0(sort(unique(wllt)),collapse=","), .N), by = c("acnm")][order(-N)])
   
   # View Cytotox components
   stripchart(rval ~ wllt_conc, dat4[wllq == 1 & grepl("AB",acnm)], 
-             vertical = TRUE, pch = 1, method = "jitter", xlab = "wllt or approx. conc for 't' wells", main = paste0("AB Blank-Corrected Values for ",dataset_title,"\nwhere wllq == 1"))
+             vertical = TRUE, pch = 1, method = "jitter", xlab = "wllt or approx. conc for 't' wells", main = paste0("AB Blank-Corrected Values for ",project_name,"\nwhere wllq == 1"))
   stripchart(rval ~ wllt_conc, dat4[wllq == 1 & grepl("LDH",acnm)], 
-             vertical = TRUE, pch = 1, method = "jitter", xlab = "wllt or approx. conc for 't' wells", main = paste0("LDH Blank-Corrected Values for ",dataset_title,"\nwhere wllq == 1"))
+             vertical = TRUE, pch = 1, method = "jitter", xlab = "wllt or approx. conc for 't' wells", main = paste0("LDH Blank-Corrected Values for ",project_name,"\nwhere wllq == 1"))
   dat4[, wllt_conc := NULL]
 }
 
 
-createWllqSummary <- function(dat4, dataset_title) {
+createWllqSummary <- function(dat4, project_name) {
   # eventually make this an xlsx, with addl page for numerical summaries by acnm, plate, date, etc. Including where wllq=0 bc rval is NA
   # maybe also by trt too, so that user can see if somethign needs to be repeat? eh, no big
   dat4[, endpoint_type := ifelse(grepl("(LDH)|(AB)",acnm), "cytotox","mea")]
   wllq_summary <- dat4[wllq == 0 & !wllq_notes == "rval is NA; ", .(treatment = paste0(unique(treatment),collapse=","), spid = paste0(unique(spid),collapse=","), conc = paste0(unique(conc),collapse=","), wllq_notes = paste0(unique(wllq_notes), collapse = ""), endpoints = paste0(unique(endpoint_type),collapse=","), srcf = paste0(unique(srcf),collapse=",")), 
                         by = c("experiment.date","plate.id","rowi","coli")][order(experiment.date,plate.id,rowi,coli)]
-  fwrite(wllq_summary, file = paste0(dataset_title,"_summary_of_wells_where_wllq=0.csv"), sep = ",")
+  fwrite(wllq_summary, file = paste0(project_name,"_summary_of_wells_where_wllq=0.csv"), sep = ",")
   dat4[, endpoint_type := NULL]
-  return(paste0(paste0(dataset_title,"_summary_of_wells_where_wllq=0.csv")," is ready."))
+  return(paste0(paste0(project_name,"_summary_of_wells_where_wllq=0.csv")," is ready."))
 }

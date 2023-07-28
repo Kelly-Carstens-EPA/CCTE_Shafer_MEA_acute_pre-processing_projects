@@ -16,28 +16,36 @@ date: "May 11, 2023"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Load libraries
 
 ```{r}
 rm(list = ls())
 library(data.table)
 library(openxlsx)
 library(stringi)
+library(ggplot2)
 
 print(sessionInfo())
 ```
 
 
-# User-defined variables
+## Project variables definitions
 
 ```{r}
-start.dir <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response"
-dataset_title <- "TSCA2019" # e.g. "name2020"
+project_name <- "TSCA2019" # e.g. "name2020"
+
+spidmap_file <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/EPA_25092_EPA-Shafer_339_20190722.xlsx"
+spid_sheet <- 1 # sheet name in spidmap_file
+
+project.input.dir <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response"
+scripts.dir <- "mea-acute-neural-stats-to-mc0-scripts"
+root.output.dir <- ""
+assay_component_map_filename <- file.path("neural_stats_acsn_to_tcpl_acnm_map.xlsx")
+
 select.neural.stats.files <- F # select new neural stats files, or use the files in the most recent neural_stats_files_log?
 select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
 select.raw.cytotox.files <- F # select new raw cytotoxicity files, or use the files in the most recent raw_cytotox_files_log?
 run.type.tag.location <- NULL # neural stats files should be named as "tag1_tag2_tag3_....csv". Which tag in the file names defines the run type?
-spidmap_file <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/EPA_25092_EPA-Shafer_339_20190722.xlsx"
-use_sheet <- 1 # sheet name in spidmap_file
 
 # optional adjutsment; usually can use defaults:
 override_wllq_checks <- FALSE # set to TRUE only if you have already verified your wllq updates
@@ -47,19 +55,22 @@ standard_analysis_duration_requirement <- TRUE # default should be true (recordi
 ```
 
 
-Set up folders, source functions, and load table
+Set up folders, source functions, and load ascn-acnm map
 ```{r}
-if (!dir.exists(file.path(dataset_title))) dir.create(file.path(dataset_title))
-if (!dir.exists(file.path(dataset_title,"output"))) dir.create(file.path(dataset_title,"output"))
+if (!dir.exists(file.path(project_name))) dir.create(file.path(project_name))
+if (!dir.exists(file.path(project_name,"output"))) dir.create(file.path(project_name,"output"))
 
 # source all functions in folder 'mea-acute-neural-stats-to-mc0-scripts'
-scripts <- list.files(path = "mea-acute-neural-stats-to-mc0-scripts", pattern = "\\.R$", full.names = T, recursive = F)
-sapply(scripts, source)
+scripts <- list.files(path = scripts.dir, pattern = "\\.R$", full.names = T, recursive = F)
+for (scripti in scripts)
+  source(scripti)
 
 # loading acsn_acnm map
-acsn_map <- as.data.table(read.csv(file.path("neural_stats_acsn_to_tcpl_acnm_map.csv")))
-# acsn_map <- acsn_map[, .(acsn, acnm)]
+acsn_map <- as.data.table(read.xlsx(assay_component_map_filename))
+acsn_map <- acsn_map[, .(acsn, acnm)]
+rm(assay_component_map_filename)
 ```
+
 
 Save items to be kept throughout all levels
 ```{r}
@@ -71,20 +82,26 @@ keep.items <- c(ls(),'keep.items')
 
 ## Read any .txt files with important notes
 
-Scan for readme's that might affect dosing, wllq
-
+Scan for txt files with notes that might affect dosing, wllq
 ```{r}
-txt.files <- list.files(start.dir, pattern = '\\.txt', recursive = T, full.names = T)
-readmes <- txt.files[grepl('read( )*me',tolower(txt.files))]
-if (length(readmes) > 0) {
-  for (i in 1:length(readmes)) {
+txt.files <- list.files(project.input.dir, pattern = '\\.txt', recursive = T, full.names = T)
+```
+
+View any README .txt files
+```{r eval = F}
+# Read in the READMEs
+readmes.filename <- txt.files[grepl('read( )*me',tolower(txt.files))]
+readmes.body <- sapply(readmes.filename, scan, what = character(), sep = '\n', quiet = T) # read the text files
+readmes.body <- sapply(readmes.body, paste0, collapse = "\n") # Make each note 1 string
+
+# View the readmes that have any non-generic text
+if (length(readmes.body) > 0) {
+  for (i in 1:length(readmes.body)) {
     cat(i,'\n')
-    cat(dirname(readmes[i]),'\n')
-    cat(scan(readmes[i], what = character(), sep = '\n', quiet = T), sep = '\n')
-    cat('\n')
+    cat(names(readmes.body)[i],'\n')
+    cat(readmes.body[i])
+    cat('\n\n')
   }
-} else {
-  cat('no readme.txt files')
 }
 # 1 
 # L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response/20210526 Culture G26 (201B07, 201C02, 201C03 may need repeat) 
@@ -95,7 +112,7 @@ if (length(readmes) > 0) {
 5/11/23: Seline has already updated the formula in the Calculations file such that the corrected optical density values for plate 1 are corrected to the blanks from plate 2. No further updates needed.
 
 Check for any other .txt files that look relevant
-```{r}
+```{r eval = F}
 cat('other txt files:\n')
 cat(setdiff(txt.files,readmes), sep = "\n")
 # (if there are any other txt files that look like they might have relevant notes, review the contents of those files as well)
@@ -111,7 +128,7 @@ Get a list of all cultures in the main folder to check off as I review wllq note
 
 ```{r eval = FALSE}
 # Just want to get a list of all cultures in the main folder
-group.folders <- list.files(path = start.dir, pattern = '[0-9]{8}', include.dirs = T)
+group.folders <- list.files(path = project.input.dir, pattern = '[0-9]{8}', include.dirs = T)
 cat(group.folders, sep ='\n')
 wb <- createWorkbook()
 addWorksheet(wb, 'TSCA cultures')
@@ -121,12 +138,10 @@ saveWorkbook(wb, file = 'TSCA2019/tables/TSCA2019_culture_folders_to_review.xlsx
 
 ## Get list of neural stats files, meta data files, and (opt) raw cytotoxicity data files
 
-```{r}
-cat(paste0(dataset_title, " MEA Acute TCPL Level 0 Data Prep Running Log\nDate: ",as.character.Date(Sys.Date()),"\n"))
-
+```{r eval = F}
 # For each culture, get all files under "Neural Statistic Compiler" folder
 # if there are not exactly 6 files per folder -> flag (including if there are just 0)
-group.folders <- list.files(path = start.dir, 
+group.folders <- list.files(path = project.input.dir, 
                             pattern = '[0-9]{8}',
                             include.dirs = T,
                             full.names = T)
@@ -137,13 +152,13 @@ print(basename(group.folders))
 Looks okay!
 
 Select input files to use, store files in .txt file
-```{r}
+```{r eval = F}
 if (select.neural.stats.files) {
   
   # Use below lines of code to get all files in folder "Neural Statistic Compiler" for each group
   # Or, if project is not cleanly organized, use below function to cycle through 
   # folders in project and manually select files using the 'choose.files' window interface
-  # selectInputFiles(start.dir, dataset_title, files_type = "neural_stats")
+  # selectInputFiles(project.input.dir, project_name, files_type = "neural_stats")
   
   # Get all neural stats files in folder
   neural.stats.files <- sapply(group.folders, 
@@ -176,19 +191,19 @@ if (select.neural.stats.files) {
   stopifnot(sum(unlist(num.files.per.group) %% 2) == 0)
   
   # Write files to log
-  writeLogFile(unlist(neural.stats.files), dataset_title, files_type = 'neural_stats')
+  writeLogFile(unlist(neural.stats.files), project_name, files_type = 'neural_stats')
   
 }
 ```
 
 Select calculations files
-```{r}
+```{r eval = F}
 if (select.calculations.files) {
   
   # Use below lines of code to get files in group folders that contain the phrase "Calculations"
   # Or, if project is not cleanly organized, use below function to cycle through 
   # folders in project and manually select files using the 'choose.files' window interface
-  # selectInputFiles(start.dir, dataset_title, files_type = "calculations")
+  # selectInputFiles(project.input.dir, project_name, files_type = "calculations")
   
   # Get all calculations files in folder
   calc.files <- sapply(group.folders, 
@@ -212,20 +227,20 @@ if (select.calculations.files) {
   stopifnot(sum(num.files.per.group != 1) == 0)
   
   # Write files to log
-  writeLogFile(unlist(calc.files), dataset_title, files_type = 'calculations')
+  writeLogFile(unlist(calc.files), project_name, files_type = 'calculations')
   
 }
 ```
 
 Select raw cytotoxicity data files
 
-```{r}
+```{r eval = F}
 if (select.raw.cytotox.files) {
   
   # Use below lines of code to get files in group folders that contain the phrase "Calculations"
   # Or, if project is not cleanly organized, use below function to cycle through 
   # folders in project and manually select files using the 'choose.files' window interface
-  # selectInputFiles(start.dir, dataset_title, files_type = "calculations")
+  # selectInputFiles(project.input.dir, project_name, files_type = "calculations")
   
   # Get all cytotox files
   # (note that namesa re not retained with recursive = T)
@@ -251,7 +266,7 @@ if (select.raw.cytotox.files) {
   num.AB.per.group[num.AB.per.group != 3]
   
   # Write files to log
-  writeLogFile(unlist(raw.cytotox.files), dataset_title, files_type = 'raw_cytotox')
+  writeLogFile(unlist(raw.cytotox.files), project_name, files_type = 'raw_cytotox')
   
 }
 ```
@@ -263,8 +278,8 @@ if (select.raw.cytotox.files) {
 
 Extract all of the data from the files and transform into long data format (dat1)
 
-```{r}
-dat1 <- extractAllData(dataset_title, 
+```{r eval = F}
+dat1 <- extractAllData(project_name, 
                        acsn_map,
                        append = F, 
                        plate.id.tag.location = NULL,
@@ -273,7 +288,7 @@ dat1 <- extractAllData(dataset_title,
 
 Get plate.id from filename for files that don't have plate ID in file header (because were ran with older machine/software)
 
-```{r}
+```{r eval = F}
 dat1[is.na(plate.id) | plate.id %in% c('MW'), .N, by = .(neural_stats_file, plate.id)]
 dat1[, check_plate_ids := is.na(plate.id) | plate.id %in% c('MW')]
 dat1[, .N, by =.(setting_axis.version, check_plate_ids)] # all the plates that dont' have plate ids come from the same axis version
@@ -287,14 +302,14 @@ Looks good!
 
 Get a numeric, sortable version of the time from the original_start_time and experiment start time (to use to help determine which files are baseline versus treated).
 
-```{r}
+```{r eval = F}
 dat1 <- getNumericTimeValFromString(dat1, time_string = 'original_file_time', new_cols_suffix = 'oft')
 dat1 <- getNumericTimeValFromString(dat1, time_string = 'experiment_start_time', new_cols_suffix = 'est')
 ```
 
 Rank the files associated with each experiment.date - plate.id combination based on the experiment start time, original file time, and neural_stats_file (name). Ideally, each experiment.date - plate.id combination will correspond to 2 files, with 1 file clearly corresponding to the chronologically first "baseline" recording and the other the secondary "treated" recording. Ideally this ranking would be agree for all 3 methods.
 
-```{r}
+```{r eval = F}
 # Determine the run type based on the 2 times given in file header
 dat1[, file_rank_oft := frank(time_posix_num_oft, ties.method = 'dense'), 
      by = .(experiment.date, plate.id)]
@@ -307,7 +322,7 @@ dat1[, file_rank_name := frank(neural_stats_file, ties.method = 'dense'),
 ```
 
 Check for discrepancies in file rank from the 3 methods
-```{r}
+```{r eval = F}
 dat1[, .N, by = .(file_rank_oft, file_rank_name, file_rank_est)]
 #   file_rank_est file_rank_oft file_rank_name      N
 # 1:             1             1              1 228672
@@ -320,7 +335,7 @@ if (nrow(dat1[!(file_rank_est == file_rank_oft & file_rank_oft == file_rank_name
 ```
 
 Investigate discrepancies
-```{r}
+```{r eval = F}
 dat1[file_rank_est != file_rank_oft, .N, by = .(experiment.date, plate.id, experiment_start_time, original_file_time)]
 #    experiment.date  plate.id experiment_start_time  original_file_time    N
 # 1:        20201208 MW71-7111   12/08/2020 10:32:25 12/08/2020 12:04:05 2064
@@ -341,7 +356,7 @@ Okay, so we have 3 plates where the experiment start time is the same in both th
 
 Usually, the original file time is about 20 minutes after the experiment start time. 
 
-```{r}
+```{r eval = F}
 dat1[, .N, by = .(experiment.date, plate.id, experiment_start_time, original_file_time, file_rank_name)][order(experiment.date, plate.id)]
 ```
 
@@ -349,7 +364,7 @@ Most likely, the experiment start time corresponds to when the plate was put in 
 
 So it appears that for these 3 plates (MW71-7111, MW71-7112, and MW72-8209), the experiment start time did not reset after the dosing (perhaps these plates were ran on a different machine that didn't require opening the lid?)
 
-```{r}
+```{r eval = F}
 dat1[, .N, by = .(setting_axis.version, ranks_agree = file_rank_est == file_rank_oft)]
 ```
 
@@ -358,7 +373,7 @@ Well, there isn't 1 axis version that explains this consistently.
 Regardless, I think we can rely on the ranking of the original file time and the file names to identify the treated and baseline recordings for these 3 plates.
 
 Make final run_type determinations
-```{r}
+```{r eval = F}
 # Determine the file type - here I'm going to use the consensus of the file_rank_oft and the file_rank_name
 dat1[file_rank_oft == 1 & file_rank_name == 1, run_type := 'baseline']
 dat1[file_rank_oft == 2 & file_rank_name == 2, run_type := 'treated']
@@ -367,7 +382,7 @@ stopifnot(nrow(dat1[is.na(run_type)]) == 0)
 
 Confirm there is exactly 1 baseline and 1 treated file per experiment/plate
 
-```{r}
+```{r eval = F}
 dat1[, .(num_base_files = length(unique(neural_stats_file[run_type == 'baseline'])),
          num_trt_files = length(unique(neural_stats_file[run_type == 'treated']))),
      by = .(experiment.date, plate.id)][num_base_files != 1 | num_trt_files != 1]
@@ -377,13 +392,13 @@ dat1[, .(num_base_files = length(unique(neural_stats_file[run_type == 'baseline'
 
 ## Setting wllq_lvl1 based on run type
 
-```{r}
+```{r eval = F}
 dat1 <- level1_set_wllq(dat1, standard_analysis_duration_requirement)
 ```
 
 Summarize output of wllq_lvl1 (taken from extract all data)
 
-```{r}
+```{r eval = F}
 dat1[, .(num_wells= length(unique(paste0(experiment.date,plate.id,well)))), by = .(wllq_lvl1, run_type, wllq_lvl1_notes)][order(run_type, -wllq_lvl1)]
 ```
 
@@ -392,8 +407,8 @@ Note that all treated run_types are expected to have wllq_lvl1 == NA at this poi
 
 ## Check consistency in settings in Neural Statistics Compiler header
 
-```{r}
-files <- read_files(dataset_title)
+```{r eval = F}
+files <- read_files(project_name)
 settings.list <- lapply(files, getNeuralStatsHeaderDat)
 set.tb <- rbindlist(settings.list)
 rm(settings.list)
@@ -404,7 +419,7 @@ set.tb <- set.tb[!setting %in% c('Original File Time','Experiment Start Time','P
 
 Check if all files have all the same setting types (informs which maestro version used)
 
-```{r}
+```{r eval = F}
 # Check if all files have the same setting types
 set.tb[, .(setting_types = paste0(unique(setting_type),collapse = ",")), by = .(neural_stats_file)][, .N, by = .(setting_types)]
 #                                                                                                                setting_types   N
@@ -413,7 +428,7 @@ set.tb[, .(setting_types = paste0(unique(setting_type),collapse = ",")), by = .(
 ```
 ah - 212 files have "Maestro Pro Settings", 6 files have "Maestro Settings". 
 Probably because these 6 used a different Maestro was used (original maestro vs Maestro Pro)
-```{r}
+```{r eval = F}
 set.tb[, maestro_type := unique(sub(' Settings','',setting_type[grepl('Maestro',setting_type)])), by = .(neural_stats_file)]
 set.tb[, .N, by = .(maestro_type)]
 # My guess is that these 6 files have settings that are common for that maestro, but not the Maestro Pro
@@ -421,7 +436,7 @@ set.tb[, .N, by = .(maestro_type)]
 
 Confirm that all settings within a given pair of treated and baseline recordings is consistent
 
-```{r}
+```{r eval = F}
 # merge in run_type determination by file name
 set.tb <- merge(set.tb, dat1[, unique(.SD), .SDcols = c('neural_stats_file','run_type','experiment.date','plate.id')], by = 'neural_stats_file', all = T)
 
@@ -443,7 +458,7 @@ None of these look truly concerning.
 
 Check for setting_types with inconsistent setting values.
 
-```{r}
+```{r eval = F}
 set.tb[, num_unique_vals := length(unique(setting_val)),
        by = .(setting_type, setting)]
 set.tb[num_unique_vals != 1, 
@@ -466,7 +481,7 @@ I see that the maestro type is contributing to the variability in some settings.
 
 Check for maestro_type - setting_type combinations with inconsistent setting values.
 
-```{r}
+```{r eval = F}
 set.tb[, num_unique_vals := length(unique(setting_val)),
        by = .(maestro_type, setting_type, setting)]
 set.tb[num_unique_vals != 1, 
@@ -485,7 +500,7 @@ set.tb[num_unique_vals != 1,
 
 * Temperature Set Point
 
-```{r}
+```{r eval = F}
 # Temperature Set Point
 set.tb[num_unique_vals != 1 & setting == 'Temperature Set Point', .N, by = .(maestro_type, setting_type, setting, setting_val)][order(setting_type, setting, -N)]
 # Looks like the temperature was intentionally changed at some point..
@@ -498,7 +513,7 @@ I am making a note to look into this more once I have all data, to see how much 
 
 * Current Temperature
 
-```{r}
+```{r eval = F}
 # Current Temperature
 set.tb[num_unique_vals != 1 & setting == 'Current Temperature', .N, by = .(maestro_type, setting_type, setting, setting_val)][order(setting_type, setting, -N)]
 ```
@@ -506,28 +521,28 @@ Variability within +/-0.1 C is not a concern. Larger differences most likely cor
 
 * CO2 Conc. Set Point
 
-```{r}
+```{r eval = F}
 set.tb[num_unique_vals != 1 & setting == 'CO2 Conc. Set Point', .N, by = .(maestro_type, setting_type, setting, setting_val)][order(setting_type, setting, -N)]
 ```
 This is fine
 
 * Actual CO2 Conc.
 
-```{r}
+```{r eval = F}
 set.tb[num_unique_vals != 1 & setting == 'Actual CO2 Conc.', .N, by = .(maestro_type, setting_type, setting, setting_val)][order(setting_type, setting, -N)]
 ```
 Again, this variability is fine, and I will check on the plate that did not have Co2
 
 * AxIS Version
 
-```{r}
+```{r eval = F}
 set.tb[num_unique_vals != 1 & setting == 'AxIS Version', .N, by = .(maestro_type, setting_type, setting, setting_val)][order(setting_type, setting, -N)]
 ```
 I know that we have used variables AxIS Versions to date, so we have to live with it.
 
 * Maestro Pro Firmware
 
-```{r}
+```{r eval = F}
 set.tb[num_unique_vals != 1 & setting == 'Maestro Pro Firmware', .N, by = .(maestro_type, setting_type, setting, setting_val)][order(setting_type, setting, -N)]
 ```
 
@@ -535,10 +550,10 @@ Making a note to follow up.
 
 Save set.tb for follow-up analyses
 
-```{r}
+```{r eval = F}
 setkey(set.tb, NULL)
 set.tb.info <- paste0('Table containing the settings extracted from the Neural Statistics Compiler file headers. Made in run_me_TSCA2019.Rmd. Saved on ',Sys.Date())
-save(set.tb, set.tb.info, file = file.path(dataset_title,'output','neural_stats_settings_table.RData'))
+save(set.tb, set.tb.info, file = file.path(project_name,'output','neural_stats_settings_table.RData'))
 ```
 
 
@@ -546,13 +561,13 @@ save(set.tb, set.tb.info, file = file.path(dataset_title,'output','neural_stats_
 
 Check that the analysis duration does not vary by more than 1% from the target (40 min, 2400 seconds)
 
-```{r}
+```{r eval = F}
 stopifnot(nrow(dat1[abs((analysis_duration - 2400)/2400) > 0.01]) == 0)
 ```
 
 Any weirdness in the analysis start?
 
-```{r}
+```{r eval = F}
 dat1[, .N, by = .(analysis_start)]
 ```
 
@@ -562,9 +577,9 @@ All starting at 0, this is fine.
 
 Can get culture.date from the file name itself or from the file foldername. I'm finding that the foldername tends to be a bit more reliable (less prone to typos).
 
-```{r}
+```{r eval = F}
 # Get full file names to get culture date from 
-files <- read_files(dataset_title)
+files <- read_files(project_name)
 files.tb <- data.table(fullname = files)
 files.tb[, basename := basename(fullname)]
 files.tb[, culture_folder := basename(dirname(dirname(fullname)))]
@@ -607,7 +622,7 @@ G29 - again, lab notebook agrees with culture date from folder name. 20210526 wa
 
 So in every cases, the culture date in the folder name agrees with the lab notebook. I'm going to assume that this is correct, and that the culture.date form the file names that are different are typos.
 
-```{r}
+```{r eval = F}
 # finalize the culture.date, get rid of extra columns
 # culture.date (from folder) does not need any changes
 dat1[, culture.date.file := NULL]
@@ -615,9 +630,9 @@ dat1[, culture.date.file := NULL]
 
 ## Save updated dat1
 
-```{r}
+```{r eval = F}
 setkey(dat1, NULL)
-save(dat1, file = paste0(dataset_title, "/output/",dataset_title,"_dat1.RData"))
+save(dat1, file = paste0(project_name, "/output/",project_name,"_dat1.RData"))
 rm(list = setdiff(ls(), keep.items))
 ```
 
@@ -626,9 +641,9 @@ rm(list = setdiff(ls(), keep.items))
 
 ## Calculate % change in activity values
 
-```{r}
+```{r eval = F}
 # collapse the plate data by calculating the percent change in activity (dat2)
-dat2 <- calcActivityPercentChange(dataset_title)
+dat2 <- calcActivityPercentChange(project_name)
 
 # check it out
 dat2[wllq_lvl2==1, summary(rval)]
@@ -638,9 +653,9 @@ Minimum rval should be approximately -100 (slightly below -100 is normal), max i
 
 ## Save updated dat2
 
-```{r}
+```{r eval = F}
 setkey(dat2, NULL)
-save(dat2, file = file.path(dataset_title,'output',paste0(dataset_title,"_dat2.RData")))
+save(dat2, file = file.path(project_name,'output',paste0(project_name,"_dat2.RData")))
 rm(list = setdiff(ls(), keep.items))
 ```
 
@@ -650,19 +665,18 @@ rm(list = setdiff(ls(), keep.items))
 
 Get list of cytotox files
 
-```{r}
-raw.cytotox.files <- read_files(dataset_title, files_type = 'raw_cytotox')
+```{r eval = F}
+raw.cytotox.files <- read_files(project_name, files_type = 'raw_cytotox')
 ```
 
-
-Note assumptions for LDH and AB raw data file reading functions:
+The functions that read the raw data for the LDH and AB acute assays are based on the following assumptions:
 
 **LDH**
 
 The function `read_acute_LDH_raw_data` assumes that:
 
 * All plates are 96-well (8x12)
-* For every plate, column 1, there is a non-NA entry that contains the plate info (e.g., "20201104_20201117_MW71-7104_TSCA Acute DR_Plate 1")
+* In each LDH raw data file, fo every plate, in column 1, there is a non-NA entry that contains the plate info (e.g., "20201104_20201117_MW71-7104_TSCA Acute DR_Plate 1")
 * For every plate, in column 2, there is a cell that contains the word "Temperature"
 * Raw data values for each plate start 1 row below every occurrence of the word "Temperature" and continue for the next 7 rows
 * Raw data values for all plates are in columns 3 - 14
@@ -670,20 +684,21 @@ The function `read_acute_LDH_raw_data` assumes that:
 **AB**:
 
 The function `read_acute_AlamarBlue_raw_data` assumes that:
-* 1 plate per file
+
+* There is 1 plate per file
 * Plates are 96-well (8x12)
 * There is a cell with the letter "A" in the first column that signifies the first row of the plate
 * Raw data values start in the same row as the letter "A" in column 1 and continue for the next 7 rows
 * Raw data values are in columns B:M (i.e., 2 - 13)
 
 
-There are some checks in the functions to see if each file passes these assumptions. If a fail fails these checks, the function will print a statement with a description of the fail. But, a file could have some unexpected data alignment that is not caught by the checks. In that case, thus, these functions are not 100% reliable to read in the raw data, and the values should be compared to the Calculations files.
+There are some checks in the functions to see if each file passes these assumptions. If a fail fails these checks, the function will print a statement with a description of the fail. But, a file could have some unexpected data alignment that is not caught by the checks. Thus, these functions are not 100% reliable to read in the raw data, and the values should be compared to the Calculations files.
 
-If a file fails the checks, just manually confirm that the raw data values for those files have been correctly copy-pasted into the Calculations file.
+If a file fails the checks, either fix the data alignment in the file or just use the data values from the Calculations files (after manually confirming that the values in the Calculations files match the raw data values for that culture). 
 
 
 Read raw data from LDH files
-```{r}
+```{r eval = F}
 raw.cytotox.files.LDH <- grep('LDH',raw.cytotox.files, val = T)
 rawdat.LDH <- data.table()
 for (filei in raw.cytotox.files.LDH) {
@@ -695,13 +710,14 @@ for (filei in raw.cytotox.files.LDH) {
 # filei
 # debugonce(read_acute_LDH_raw_data)
 # add.tb <- read_acute_LDH_raw_data(filei)
-
-# Note any LDH files that could not be read (manually check that these data values have been correctly copied over to the Calculations file)
+```
+Note any LDH files that could not be read by the function read_acute_LDH_raw_data
+```{r eval = F}
 setdiff(basename(raw.cytotox.files.LDH), rawdat.LDH$filename)
 ```
 
 Read raw data from AB files
-```{r}
+```{r eval = F}
 raw.cytotox.files.AB <- raw.cytotox.files[!grepl('LDH',raw.cytotox.files)]
 rawdat.AB <- data.table()
 for (filei in raw.cytotox.files.AB) {
@@ -713,14 +729,16 @@ for (filei in raw.cytotox.files.AB) {
 # filei
 # debugonce(read_acute_AlamarBlue_data)
 # add.tb <- read_acute_AlamarBlue_data(filei)
+```
 
-# Note any AB files that could not be read (manually check that these data values have been correctly copied over to the Calculations file)
+Note any AB files that could not be read (manually check that these data values have been correctly copied over to the Calculations file)
+```{r eval = F}
 setdiff(basename(raw.cytotox.files.AB), rawdat.AB$filename)
 ```
 
 Confirm expected # of raw data values per file
 
-```{r}
+```{r eval = F}
 rawdat.AB[, .N, by =.(filename)][N != 96]
 rawdat.LDH[, .N, by =.(filename)][N != 96*3]
 ```
@@ -728,7 +746,7 @@ rawdat.LDH[, .N, by =.(filename)][N != 96*3]
 
 Get plate IDs for raw AB and LDH data, then combine
 
-```{r}
+```{r eval = F}
 # LDH
 
 # Get plate.id from plate.info (taken from column A of each file) as:
@@ -752,9 +770,9 @@ rawdat.cytotox <- rbind(rawdat.LDH, rawdat.AB, fill = T)
 
 Get the culture date from the folders for raw cytotox data
 
-```{r}
-# Get full file names to get culture date from 
-files <- read_files(dataset_title, files = 'raw_cytotox')
+```{r eval = F}
+# Get full file names to get culture dates 
+files <- read_files(project_name, files = 'raw_cytotox')
 files.tb <- data.table(fullname = raw.cytotox.files)
 files.tb[, basename := basename(fullname)]
 files.tb[, culture_folder := basename(dirname(dirname(fullname)))]
@@ -764,15 +782,17 @@ files.tb[, culture.date := stri_extract(culture_folder, regex = '[0-9]{8}')]
 files.tb[, .N, by = .(culture.date)]
 rawdat.cytotox <- merge(rawdat.cytotox, files.tb, 
                         by.x = 'filename', by.y = 'basename', all.x = T)
+```
 
-# Confirm 3 unique plates of each assay per group
+Confirm 3 unique plates of each assay per group
+```{r eval = F}
 rawdat.cytotox[, .(num_unique_plate_ids = length(unique(plate.id))), by = .(acsn, culture_folder, group_char)][num_unique_plate_ids != 3]
 # (if any cases, could be that there was a typo in the plate.id in the filename for AB or in the file header for LDH. Check it out and correct as needed)
 ```
 
 Add the official acnm's
 
-```{r}
+```{r eval = F}
 rawdat.cytotox <- merge(rawdat.cytotox, acsn_map[, .(acsn, acnm)], by = 'acsn', all.x = T)
 ```
 
@@ -782,7 +802,7 @@ rawdat.cytotox <- merge(rawdat.cytotox, acsn_map[, .(acsn, acnm)], by = 'acsn', 
 * For G11, reverse the plate orientation for AB Plate 71-7015 (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
 * For G20 plate 75-8201, reverse the plate orientation for AB (not implemented in raw or calc file) *** (flip 180 degrees. Well A8 -> F1)
 
-```{r}
+```{r eval = F}
 # confirm all rows and cols are defined
 rawdat.cytotox[, .N, by = .(is.na(coli), is.na(rowi))]
 rawdat.cytotox[, `:=`(rowi = as.integer(rowi), coli = as.integer(coli))]
@@ -804,7 +824,7 @@ rawdat.cytotox[group_int == '20' & plate.id == 'MW75-8201' & acsn == 'AB'
 
 Visually confirm G11 MW71-7015 rotation looks correct
 
-```{r}
+```{r eval = F}
 test.plate <- dcast(rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'AB'], rowi ~ coli, value.var = 'well_org')
 test.plate
 ```
@@ -813,7 +833,7 @@ test.plate
 Since the calculations files have not already been corrected to reflect the rotation (since this is difficult to do in Excel), I will create .csv files with the raw values that have been rotated, then manually copy-paste in the Calculations files.
 
 
-```{r}
+```{r eval = F eval = FALSE}
 # Group 11, plate 7015
 fullname.org <- rawdat.cytotox[group_int == '11' & plate.id == 'MW71-7015' & acsn == 'AB', unique(fullname)]
 fullname.adj <- sub('\\.xls','_upper_48well_raw_vals_rotated_180degrees.csv',fullname.org)
@@ -835,9 +855,9 @@ write.csv(tb1[, c('row_char', 1:12)], row.names = F, file = fullname.adj)
 
 ## Calculate blank-corrected values
 
-Calculate average of blank wells. Blank wells in both assays are in G1, 2 and 3
+Calculate the average of the blank wells on each plate. Blank wells in both assays are in G1, 2 and 3
 
-```{r}
+```{r eval = F}
 # check that there are 3 non-NA blanks per plate
 stopifnot(nrow(rawdat.cytotox[, .(sum(rowi == 7 & coli %in% c(1:3) & !is.na(rval_not_blank_corrected))), by = .(culture.date, plate.id, acsn)][V1 != 3]) == 0)
 
@@ -846,36 +866,34 @@ rawdat.cytotox[, blank_well_avg := mean(rval_not_blank_corrected[rowi == 7 & col
 
 ```
 
-
-(Manually check well quality tables to see if any blank wells have wllq == 0).
+Manually check the well quality tables to see if any blank wells have wllq == 0. If any, update the average of the blank wells on affected plates.
 
 -> Culture 20210414 plate 75-8114 LDH well G3 has wllq == 0, so will exclude that well from blank well calculation
 
-```{r}
+```{r eval = F}
+# View values
 rawdat.cytotox[culture.date == '20210414' & plate.id == 'MW75-8114' & acsn == 'LDH' & rowi %in% c(7) & coli %in% 1:3, .(rowi, coli, rval_not_blank_corrected)]
+
+# Update blank well average to only include G1 and G2 on affected plate
 rawdat.cytotox[culture.date == '20210414' & plate.id == 'MW75-8114' & acsn == 'LDH',  
-               blank_well_avg := mean(rval_not_blank_corrected[rowi == 7 & coli %in% c(1:2)], na.rm = T),
+               blank_well_avg := mean(rval_not_blank_corrected[rowi == 7 & coli %in% c(1,2)], na.rm = T),
                by = .(culture.date, plate.id, acsn)]
 ```
 
+Subtract the average of the blank wells from all other wells
 
-Subtract blank wells from all other wells
-
-```{r}
+```{r eval = F}
 rawdat.cytotox[, rval := rval_not_blank_corrected - blank_well_avg]
 ```
 
 
-## Read in cytotox data the traditional way & compare
+## Read in blank-corrected cytotox data from Calculations files
 
+Note that the function `getAllCytoData` gets the blank-corrected values from the Calculations files. 
 
-Confirm output looks okay,
-
-Then merge with raw data, making adjustments as needed as noted in OneNote
-
-```{r}
+```{r eval = F}
 # get cytotox data
-cytodat <- getAllCytoData(dataset_title)
+cytodat <- getAllCytoData(project_name)
 # some values are negative (-1081 - -3.3333e-05):
 #                         acnm rval_is_neg    N
 # 1:  CCTE_Shafer_MEA_acute_AB       FALSE 5277
@@ -892,22 +910,11 @@ cytodat <- getAllCytoData(dataset_title)
 ```
 
 
-If there are any warnings about NA raw values
-* confirm that these are expected (rather than e.g. unexpected data alignment)
-
-I know that some of the lysis wells were not usable on MW75-8114e - were any other wells NA?
-
-```{r}
-cytodat[plate.id == 'MW75-8114' & is.na(rval)] 
-```
-
-All is okay.
-
 Get culture dates
 
-```{r}
+```{r eval = F}
 # Get full file names to get culture date from 
-files <- read_files(dataset_title, files = 'calculations')
+files <- read_files(project_name, files = 'calculations')
 files.tb <- data.table(fullname = files)
 files.tb[, basename := basename(fullname)]
 files.tb[, culture_folder := basename(dirname(fullname))]
@@ -924,13 +931,10 @@ cytodat[, .(num_unique_plate_ids = length(unique(plate.id))), by = .(acnm, cultu
 ```
 
 
-## Compare with raw cytotoxicity data, resolve discrepancies
+## Compare raw and manipulated cytotox data, resolve discrepancies
 
-```{r}
-# Which rows to merge? (rawdat will contain some empty wells that are not needed)
-cytodat[grepl('AB',acnm), .N, by = .(rowi, coli)]
-
-# Subset rawdat.cytotox to wells we actually want to use
+```{r eval = F}
+# Subset rawdat.cytotox to wells with data
 rawdat.cytotox[, use_wells := 0]
 rawdat.cytotox[acsn == 'AB' & rowi %in% c(1:6) & coli %in% c(1:8), use_wells:=1]
 rawdat.cytotox[acsn == 'LDH' & ((rowi %in% c(1:6) & coli %in% c(1:8)) |
@@ -948,672 +952,457 @@ comp.dat <- merge(cytodat, rawdat.cytotox.tomerge, by = c("plate.id", "rowi", "c
                   suffixies = c('.calc','.raw'), all = T)
 ```
 
-### Test data presence agreement
-```{r}
-comp.dat[, .N, by = .(in_calc, in_raw)]
+### Compare data presence agreement
+
+```{r eval = F}
+comp.dat3[, .N, by = .(in_calc, in_raw)]
 #    in_calc in_raw     N
-# 1:       1      1 11335
-# 2:      NA      1   209
-# 3:       1     NA   208
+# 1:       1      1 11439
+# 2:      NA      1   105
+# 3:       1     NA   104
 
 setdiff(cytodat$culture.date, rawdat.cytotox$culture.date) # empty
 setdiff(rawdat.cytotox$culture.date, cytodat$culture.date) # empty
 
-setdiff(cytodat$plate.id, rawdat.cytotox$plate.id) # "MW75-7519" "MW75-9201"
-setdiff(rawdat.cytotox$plate.id, cytodat$plate.id) # "MW75-5819" "MW75-9121"
+setdiff(cytodat$plate.id, rawdat.cytotox$plate.id) # "MW75-9201"
+setdiff(rawdat.cytotox$plate.id, cytodat$plate.id) # "MW75-9121"
 
-comp.dat[plate.id %in% c("MW75-7519","MW75-9201",
-                         "MW75-5819", "MW75-9121"), .N, by  = .(culture.date, plate.id, in_calc, in_raw, srcf, filename, acnm)][order(culture.date)]
+comp.dat3[plate.id %in% c("MW75-9201",
+                          "MW75-9121"), .N, by  = .(culture.date, plate.id, in_calc, in_raw, srcf, filename, acnm)][order(culture.date)]
 
 ```
 
-For G12, in the lab notebook, plate 1 was originally written as 75-7519. Then it was crossed out and replaced with 75-5819 on 3/23/21 and initialed by Theresa. Therefore, I think 75-7519 in the Calculations file was a typo. Will update that here and in the Calculations file now.
+For G36 - lab notebook and neural stats compiler files indicate that the plate.id for plate 3 is 75-9201, not 75-9121, so I think MW75-9201 is correct.
 
-```{r}
-cytodat[culture.date == '20210310' & group_int == 12 & plate.id == 'MW75-7519', plate.id := 'MW75-5819']
-```
-
-For G36 - lab notebook and neural stats compiler files indicate that the plate.id should be 75-9201, not 75-9121, so I think MW75-9201 is correct.
-
-```{r}
+```{r eval = F}
 rawdat.cytotox.tomerge[group_int == 36 & plate.id == 'MW75-9121', plate.id := 'MW75-9201']
 ```
 
 Re-merge
 
-```{r}
+```{r eval = F}
 comp.dat <- merge(cytodat, rawdat.cytotox.tomerge, by = c("plate.id", "rowi", "coli", "acnm",  "culture_folder", "group_char", "group_int", "culture.date"),
                   suffixies = c('.calc','.raw'), all = T)
 
 # Test data presence agreement
-comp.dat[, .N, by = .(in_calc, in_raw)]
+comp.dat3[, .N, by = .(in_calc, in_raw)]
 #    in_calc in_raw     N
 # 1:       1      1 11543
 # 2:      NA      1     1
 
-comp.dat[is.na(in_calc), .(acnm, culture.date, plate.id, rowi, coli, rval.x, rval.y)]
+comp.dat3[is.na(in_calc), .(acnm, culture.date, plate.id, rowi, coli, rval.x, rval.y)]
 #                         acnm culture.date  plate.id rowi coli rval.x    rval.y
 # 1: CCTE_Shafer_MEA_acute_LDH     20210414 MW75-8114    8    6     NA 0.8766333
 
 ```
-Ah, yes, this is the plate where there were only two 1/2 lysis control wells instead of the usual 3. Wllq is 0 for this well regardless, so no updates are needed.
+Ah, yes, this is the plate where there were only two 1/2 lysis control wells instead of the usual 3. Wllq will be 0 for this well regardless, so no updates are needed.
 
 ### Compare rvals
 
-```{r}
-comp.dat[, rval_pct_diff := abs(rval.x - rval.y)/((rval.x + rval.y)*0.5)*100]
-comp.dat[rval_pct_diff >= 0.5, 
-         .(.N, affected = paste0(unique(acsn),collapse = ","), 
-           max_pct_diff = max(rval_pct_diff), 
-           max_raw_diff = max(abs(rval.x - rval.y))), by = .(group_int, culture.date, plate.id)][order(culture.date, group_int)]
-# output as of 6/5/2023 at 6:17pm:
-#     group_int culture.date  plate.id  N affected max_pct_diff max_raw_diff
-#  1:         1     20201104 MW71-7106 17      LDH  2955.811277 8.562000e-01
-#  2:         6     20210120 MW72-8208 18      LDH  1199.556541 9.918333e-01
-#  3:         7     20210120 MW72-8212 20      LDH  3424.811219 1.058267e+00
-#  4:        13     20210310 MW75-8003  1      LDH   200.000000 2.775558e-17
-#  5:        20     20210428 MW75-8201 19      LDH   200.000000 4.863333e-01
-#  6:        20     20210428 MW75-8202 64   AB,LDH   319.130435 7.477667e+03
-#  7:        20     20210428 MW75-8203 62   AB,LDH   200.000000 6.216667e+03
-#  8:        21     20210428 MW75-8204 66   AB,LDH   200.000000 1.368600e+04
-#  9:        21     20210428 MW75-8205 65   AB,LDH   200.000000 1.244133e+04
-# 10:        21     20210428 MW75-8206 68   AB,LDH   200.000000 1.301900e+04
-# 11:        26     20210526 MW75-8219 47       AB     4.042701 9.776667e+02
-# 12:        31     20210630 MW78-4406 48       AB   200.000000 1.235033e+04
+```{r eval = F}
+comp.dat3[, rval_pct_diff := abs(rval.x - rval.y)/((rval.x + rval.y)*0.5)*100]
 
-```
-
-**Review all discrepancies**
-
-* Group 1 - The blank wells were abnormally high for Group 1, plate 3 - therefore, the blanks from plate 2 were used instead (2/3 blanks were ~10X those in plate 2). I agree with this decision.
-* Group 6 - similiar situation, average of blanks taken from plate 2
-* G7 - blanks for plate 2 taken from plate 1
-* G13 - this is fine, actually difference is negligible (% diff just seems large because values are close to 0).
-* G20 - I confirmed with Seline 5/9/23 that she just forget to copy over the raw data values into the Calcuations file for this group . I will update that Calculations file now. (Note that for plate 1, AB, raw values already updated when we updated due to reversed plate orientation).
-* G21- again, I confirmed with Seline 5/9/23 that she just forget to copy over the raw data values into the Calcuations file for this group . I will update that Calculations file now.
-* G26, AB - blanks taken from plate 2
-* G31 - raw data for plate 3 in calculations file matches data for plate 3 in Group 30. So this portion of the excel spreadsheet probably just go missed.
-
-Read in data from calculations files again to confirm updates
-
-```{r}
-cytodat <- getAllCytoData(dataset_title)
-cytodat[, in_calc := 1]
-
-# Get culture dates
-cytodat <- merge(cytodat, files.tb, 
-                 by.x = 'srcf', by.y = 'basename', all.x = T)
-
-# Confirm 3 unique plates of each assay per group
-cytodat[, .(num_unique_plate_ids = length(unique(plate.id))), by = .(acnm, culture_folder, group_char)][num_unique_plate_ids != 3]
-
-# re-merge
-comp.dat <- merge(cytodat, rawdat.cytotox.tomerge, by = c("plate.id", "rowi", "coli", "acnm",  "culture_folder", "group_char", "group_int", "culture.date"),
-                  suffixies = c('.calc','.raw'), all = T)
-
-# Confirm data presence alignment
-comp.dat[, .N, by = .(in_calc, in_raw)]
-comp.dat[is.na(in_calc), .(acnm, culture.date, plate.id, rowi, coli, rval.x, rval.y)]
-#                         acnm culture.date  plate.id rowi coli rval.x    rval.y
-# 1: CCTE_Shafer_MEA_acute_LDH     20210414 MW75-8114    8    6     NA 0.8766333
-# wllq is 0 here, so no updates needed
-
-# Compare rvals
-comp.dat[, rval_pct_diff := abs(rval.x - rval.y)/((rval.x + rval.y)*0.5)*100]
-comp.dat[rval_pct_diff >= 0.5, 
-         .(.N, affected = paste0(unique(acsn),collapse = ","), 
-           max_pct_diff = max(rval_pct_diff), 
-           max_raw_diff = max(abs(rval.x - rval.y))), by = .(group_int, culture.date, plate.id)][order(culture.date, group_int)]
+# See where the blank-corrected rvals differ by more tha 0.5% between the 2 source files
+comp.dat3[rval_pct_diff >= 0.5, 
+          .(.N, affected = paste0(unique(acsn),collapse = ","), 
+            max_pct_diff = max(rval_pct_diff), 
+            max_raw_diff = max(abs(rval.x - rval.y))), by = .(group_int, culture.date, plate.id)][order(culture.date, group_int)]
 #    group_int culture.date  plate.id  N affected max_pct_diff max_raw_diff
 # 1:         1     20201104 MW71-7106 17      LDH  2955.811277 8.562000e-01
 # 2:         6     20210120 MW72-8208 18      LDH  1199.556541 9.918333e-01
 # 3:         7     20210120 MW72-8212 20      LDH  3424.811219 1.058267e+00
 # 4:        13     20210310 MW75-8003  1      LDH   200.000000 2.775558e-17
 # 5:        26     20210526 MW75-8219 47       AB     4.042701 9.776667e+02
-# 6:        31     20210630 MW78-4406 48       AB   200.000000 1.235033e+04
+
 ```
 
-Good, now the only discrepancies correspond to the cases where a different plate was used to perform the blank-correction.
+**Review all discrepancies**
+
+* Group 1 - The blank wells were abnormally high for Group 1, plate 3 - therefore, the blanks from plate 2 were used instead in the Calculations file (2/3 blanks were ~10X those in plate 2). I agree with this decision
+* Group 6 - similar situation, average of blanks taken from plate 2
+* G7 - blanks for plate 2 taken from plate 1
+* G13 - this is fine, actually difference is negligible (% diff just seems large because values are close to 0).
+* G26, AB - blanks taken from plate 2
+
+(Note that the above checks identified 3 additional groups with plates that did not have the correct raw data. These Calculations files were updated accordingly so that the Calculations and raw data files are now in agreement.)
+
+## Identify final cytotoxiciy data table
+
+In this case, we want the final values in the cytotoxicity data taken from the Calculations files.
+
+```{r eval = F}
+rm(rawdat.cytotox, rawdat.AB, rawdat.LDH, rawdat.cytotox.tomerge)
+
+# keeping cytodat
+cytodat[, in_calc := NULL]
+setkey(cytodat, NULL)
+save(cytodat, 
+     file = paste0(project_name, "/output/",project_name,"_cytodat.RData"))
+rm(list = setdiff(ls(), keep.items))
+
+```
+
+# Level 4
+
+## Combine dat2 and cytodat
+
+```{r}
+# Load dat2
+load(file.path(project_name,'output',paste0(project_name,"_dat2.RData")))
+
+# Load cytodat
+load(file.path(project_name,'output',paste0(project_name,"_cytodat.RData")))
+
+# create a date_plate column to keep track of unique plates
+dat2[, date_plate := paste(experiment.date,plate.id,sep = "_")]
+cytodat[, date_plate := paste(experiment.date,plate.id,sep = "_")]
+
+# Check if any plates in cytodat are not in dat2
+cytodat[!date_plate %in% unique(dat2$date_plate), .N, by = .(culture_folder, experiment.date, plate.id)]
+#                                   culture_folder experiment.date  plate.id   N
+# 1:                           20201125 Culture G2        20201208 MW71-7113 104
+# 2: 20210512 Culture G24 (200H02 may need repeat)        20210525 MW75-8213 104
+```
+
+I'm intentionally skipping 71-7113 and MW75-8213 in the MEA data for now, because of the split recordings.
+
+```{r}
+# Check if any plates in dat2 are not in cytodat
+dat2[!date_plate %in% cytodat$date_plate, .N, by = .(culture_folder, experiment.date, plate.id)]
+# empty
+```
+
+Combine into 1 table
+
+```{r}
+# clean columns
+dat2[, srcf := paste(neural_stats_file.b,neural_stats_file.t,sep =";")]
+dat2[, c("neural_stats_file.b","neural_stats_file.t") := NULL]
+cytodat[, fullname := NULL]
+setdiff(names(dat2), names(cytodat)) # can fill wllq_lvl2 with NA for now
+setdiff(names(cytodat), names(dat2)) # can fill treatment, conc with NA for now 
+
+dat3 <- rbind(dat2, cytodat, fill = T)
+rm(dat2, cytodat)
+```
 
 
-So there are some pieces of data that I would have got wrong if I had only looked at the calc files (i.e., where the raw data wasn't copied), and there are other pieces of data i would have missed if without the calc files (i.e., whether to use the blanks from another plate.)
+Initialize columns that will be useful for checks below
 
-To do:
-* Summarize canonical course of action in instructions (i.e., read in both files, then compare, looking out for X; ultimately want calc files to be correct if possible and will plan to ultimately read data from those)
-* Review what you've done here, condense where possible/helpful
-* Officially have name cytotox data table, rm others
-* Hmm, that seems like a lot of negatives/zero's for the LDH... is this right? Is this an indication of badness fro the assay? We'll check it out (but don't spend too much time - consider o items and where this woudl fit in importance-wise)
-* See onenote for next steps!
+```{r}
+# Define the full well id to faciliate checking
+dat3[, full_well_id := paste(apid, rowi, coli, sep = '_')]
+```
+
+## Check treatment labels
+
+```{r}
+# save the original treatment name as read from the source file (srcf) for reference
+dat3[, treatment_srcf := treatment]
+```
+
+* Need to get the treatment labels for the dat2 from the cytodat (because no MaestroExperimentLog saved). But first, confirm that the treatments in the LDH and AB data agree by well.
+
+```{r}
+dat3[grepl('(LDH)|(AB)',acnm), 
+     .(num_treatment_labels = length(unique(treatment))), 
+     by = .(experiment.date, plate.id, rowi, coli)][num_treatment_labels > 1]
+# (should be empty)
+# if there was a real experimental inconsistency in the treatments by well in the LDH and AB, do something creative to extrapolate the correct treatment labels for the other parameters
+```
+
+* Check for any missing treatment labels. Usually, any NAs would correspond to blank or Media-only wells, but confirm there are no unexpected NA treatments.
+
+```{r}
+dat3[grepl('(LDH)|(AB)',acnm) & (is.na(treatment) | treatment %in% 0)]
+# dat3[is.na(treatment), treatment := 'Media']
+```
+
+What is this 0 treatment?
+
+```{r}
+dat3[treatment == 0, .N, by = .(culture_folder, rowi)][order(culture_folder)]
+```
+
+Lab notebook confirms that the wells E5 - E8 and F5 - F8 appear to have been empty in G32, G33, G34, G35. Will re-label these wells as "Media"
+
+```{r}
+dat3[culture_folder %in% c('20210630 Culture G32','20210707 Culture G33','20210707 Culture G34','20210714 Culture G35') & coli %in% 5:8 & rowi %in% 5:6, treatment := 'Media']
+
+dat3[treatment == 0, .N, by = .(treatment, culture_folder, rowi, srcf)][order(culture_folder)]
+
+```
+
+Looking at the Calculations file (sheet 'Dosing Plate'), I'm pretty sure this treatment is supposed to be 199B10. But I'm always hesitant to just update the meta data files on my own...
 
 
-SIMPLEST approach: (old)
 
-* Take the raw cytotox data
-* Get the meta data from the calc files
-* Look at distribution of lysis control wells (need to develop a cutoff, as Kathleen said 5/31). Should I read in percent of control to discern which control well she usually uses? Did Seline even look at that? M Communicate with Kathleen that I haven't been usign her stuff up to this point... is that okay? (probs triage for later)
+* Extrapolate the treatment labels for the non-cytotoxicity parameters
 
+```{r}
+dat3[!grepl('(LDH)|(AB)',acnm), .N, by = .(treatment)] # all currently NA
+
+# extrapolate treatment labels
+dat3[, treatment := unique(treatment[!is.na(treatment)]), by = .(experiment.date, plate.id, rowi, coli)]
+dat3[is.na(treatment)]  #empty, good
+```
+
+* Standardize controls
+
+```{r}
+# If some DMSO wells labelled "DMSOa", "DMSOb", etc, standardize
+dat3[grepl("DMSO",treatment), treatment := "DMSO"]
+```
+
+* Check the number of treatments per plate. Usually, there should be 10 unique treatments per MEA or AB plate (6 chemicals + DMSO + PICRO + TTX + Media) and 14 per LDH plate (10 + Lysis + 1/2 Lysis + 1:250 LDH + 1:2500 LDH). If there are more or less, check for any typos.
+
+```{r}
+dat3[!grepl('LDH',acnm), .(num_treatments_per_plate = length(unique(treatment))), by = .(apid)][num_treatments_per_plate != 10]
+
+dat3[grepl('LDH',acnm), .(num_treatments_per_plate = length(unique(treatment))), by = .(apid)][num_treatments_per_plate != 14]
+```
+
+* Check for the expected number of wells associated with each treatment. Usually, for every treatment, there should be 3 plates * 7 wells per plate = 21 wells. If there are more or less than 21 wells, check for any typos in the treatment. Note that vehicle controls will be associated with 6 wells * number of plates. Some treatments may have been intentionally repeated in multiple cultures (in which case these will be associated with a multiple of 21 wells). Check that the treatments that are associated with multiple cultures appear are not unexpected). 
+
+```{r}
+dat3[, .(num_wells_per_treatment = length(unique(full_well_id))), 
+     by = .(treatment)][num_wells_per_treatment != 21]
+
+# Check that treatments that appear to have been repeated were tested in a group that indicates an intentional repeat (rather than a typo)
+ignore.repeated.treatments <- c('DMSO','Water','EtOH','PICRO','TTX', 'Media','1:250 LDH','1:2500 LDH')
+check.treatments <- dat3[, .(num_wells_per_treatment = length(unique(full_well_id))), by = .(treatment)][num_wells_per_treatment != 21 & !(treatment %in% ignore.repeated.treatments | grepl('Lysis',treatment)), unique(treatment)]
+# check.treatments
+dat3[treatment %in% check.treatments,
+     .(cultures = paste0(sort(unique(culture.date)),collapse = ",")),
+     by = .(treatment)]
+
+dat3[treatment %in% check.treatments,
+     .N, by = .(treatment, culture_folder)][order(treatment)]
+```
+
+For TSCA2019, I know that a lot of compounds had to be repeated. Will vet whether these treatments were intentional (versus typos) later on when we determine which experiments to keep for each treatment.
+
+
+## Determine appropriate treatment labels for positive controls
+
+### MEA plates
+
+Picrotoxin (PICRO) and Tetrodotoxin (TTX) are added as positive controls that increase (PICRO) or decrease (TTX) the activity in the MEA plates. These positive controls should have little to no effect on the cell viability. 
+
+PICRO is usually added to well D1, TTX to well E1, and Lysis to well F1. These positive controls may be added before or after the second recording. (Usually PICRO and TTX added before, Lysis added after). If they were added before the second recording, then we want the treatment labels in these wells to be PICRO and TTX, respectively. However, if they were added after the second recording, then the treatment labels for these wells should be "Media" (because no treatment was present in these wells during either second recording). The choice to add the PICRO and TTX before or after the second experiment may vary by experiment date.
+
+```{r}
+# visually confirm if the PICRO, TTX, LYSIS were added before the second recording for MEA endpoints
+# varies across experiments, sometimes across days
+plotdat <- dat3[(treatment %in% c("DMSO","PICRO","TTX","BIC","Media") | grepl("lysis",tolower(treatment))) & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
+
+ggplot(plotdat, aes(x = treatment, y = rval))+
+  geom_jitter(width = 0.2, height = 0, pch = 1)+
+  ylab('mean firing rate % change')+
+  geom_hline(yintercept = -100, lty = 'dashed')+
+  theme_bw()+
+  ggtitle(paste0('% change in Mean Firing Rate for Controls',
+                 '\nNO changes to treatment labels'))
+```
+
+If some of the PICRO, TTX, or LYSIS wells look clearly more like the DMSO or Media wells than positive controls, it is possible that those wells did not contain the positive control substance during the second recording and should be re-labelled as 'Media'. Use your best judgment. Regardless, the PICRO, TTX, and LYSIS wells are not currently used as part of the normalization for the acute MEA data, so it is not the end of the world if these treatment labels are incorrect.
+
+Note that if some individual wells appear way off, check the well quality table to see if these will be excluded regardless.
+
+For the TSCA2019:
+
+* PICRO - seems like some wells responded really well, others not so much. But there isn't a clearly separation of data points where I would think that some wells did not have PICRO, so I can't defend an argument to update the treatment labels for the MEA data
+* TTX - all but 2 wells had a complete loss of activity, so these treatment labels look correct.
+* No data rows associated with the MEA data currently labelled as 'Lysis'
+
+### AB plates
+
+For cytotoxicity assays, the F1 wells should contain Lysis (usually says "Media" in meta data, since that is correct for the MEA plates). Re-label the treatments to refect this.
+
+However, note that in TCPL the 'pval' for the Alamar Blue assay is set to 0. The wells with wllt == 'p' are not used as part of the normalization. Therefore, the Lysis wells will be ignored in the Alamar Blue assay. So getting this treatment label correct is not critical. 
+
+```{r}
+# for Cell Titer Blue assay:
+plotdat <- dat3[(treatment %in% c("DMSO","PICRO","TTX","BIC","Media","1:250 LDH","1:2500 LDH") 
+                 | grepl("lysis",tolower(treatment))
+                 | (rowi = 6 & coli == 1)) & grepl("(AB)",acnm)]
+
+# Separate out the F1 wells
+plotdat[rowi == 6 & coli == 1, treatment := paste0(treatment,'_F1')]
+
+ggplot(plotdat, aes(x = treatment, y = rval))+
+  geom_jitter(width = 0.2, height = 0, pch = 1)+
+  ylab('blank-corrected value')+
+  theme_bw()+
+  ggtitle(paste0('Alamar Blue blank-corrected values for Controls',
+                 '\nNO changes to treatment labels'))
+```
+
+For the TSCA2019:
+
+* Yep, looks all of the F1 wells have a blank-corrected value near 0. Therefore, the treatment in these wells was most likely Lysis. 
+* PICRO and TTX wells look fairly similar to DMSO, as expected
+
+```{r}
+# Update treatment label
+dat3[grepl("AB",acnm) & rowi == 6 & coli == 1, treatment := 'Lysis']
+
+# View updated plot
+plotdat <- dat3[(treatment %in% c("DMSO","PICRO","TTX","BIC","Media","1:250 LDH","1:2500 LDH") 
+                 | grepl("lysis",tolower(treatment))
+                 | (rowi = 6 & coli == 1)) & grepl("(AB)",acnm)]
+
+ggplot(plotdat, aes(x = treatment, y = rval))+
+  geom_jitter(width = 0.2, height = 0, pch = 1)+
+  ylab('blank-corrected value')+
+  theme_bw()+
+  ggtitle(paste0('Alamar Blue blank-corrected values for Controls',
+                 '\nF1 wells re-labelled as "Lysis"'))
+
+```
+
+### LDH plates
+
+Treatments in the LDH wells are generally the same as in the MEA plates and should not need to be updated (see experiment details). Note that in TCPL the 'pval' for the LDH assay is defined by the median the Lysis wells on each apid.
+
+```{r}
+# for LDH assay:
+plotdat <- dat3[(treatment %in% c("DMSO","PICRO","TTX","BIC","Media","1:250 LDH","1:2500 LDH") 
+                 | grepl("lysis",tolower(treatment))
+                 | (rowi = 6 & coli == 1))
+                & grepl("(LDH)",acnm)]
+
+# Separate out the F1 wells
+plotdat[rowi == 6 & coli == 1, treatment := paste0(treatment,'_F1')]
+
+ggplot(plotdat, aes(x = treatment, y = rval))+
+  geom_jitter(width = 0.2, height = 0, pch = 1)+
+  ylab('blank-corrected value')+
+  theme_bw()+
+  ggtitle(paste0('LDH blank-corrected values for Controls',
+                 '\nNO changes to treatment labels'))
+```
+
+Median, PICRO, TTX, and F1 wells generally appear similar to DMSO. There are a few outliers, but it's not worth investigating because the Media, PICRO, and TTX wells are not used to normalize regardless. The outlier DMSO wells are a concern... but if there is no specific well quality note, I have no way of knowing if the wllq or treatment labels should be updated.
+
+**Maybe the DMSO should be investigated...?
 
 
 ```{r}
+dat3[treatment %in% c('DMSO','Media','PICRO','TTX') & rval > 1 & grepl('LDH',acnm), .N, by = .(culture_folder, plate.id, treatment, rval)]
+```
 
-# combine the cytodat with dat2, add trt, conc, and wllq to ea (dat3)
-combineNeuralAndCyto(cytodat, main.output.dir, dataset_title)
-# OUTPUT --------------------------------------------------------- 
-# 
-# ---------------------------------------------------------------- 
-rm(cytodat)
-
-# load dat3 and finalize it
-cat("\n\nLevel 4 - Finalize well ID information:\n")
-dat4 <- get_latest_dat(lvl = "dat3", dataset_title)
-dat4[, dat2 := NULL]
-dat4[, dat3 := basename(RData_files_used)]
-
-
-# FINALIZE WLLQ
-cat("\nFinalize Wllq:")
-# set wllq to zero where rval is NA
-cat("\nNA rval's:",dat4[wllq==1 & is.na(rval),.N])
-#
-cat("\nInf rval's (baseline==0):",dat4[wllq==1 & is.infinite(rval),.N])
-# 
-dat4[is.na(rval), `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "rval is NA; "))]
-dat4[is.infinite(rval), `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "rval is Inf; "))]
-cat("\nWell quality set to 0 for these rval's.\n")
-
-# do any other updates to wllq based on notes from lab notebook
-# e.g. misdosed, recording too long, etc.
-# for example, updateWllq(dat4, date = "20190530", plate = "MW68-0807", well = "C6", wllq_note = "Contamination", override_check = override_wllq_checks)
-
-# start a pdf to save the summary graphs
-graphics.off()
-pdf(file = file.path(main.output.dir, paste0(dataset_title, "_summary_figures_report_",as.character.Date(Sys.Date()),".pdf")), width = 10, height = 8)
-
-# VERIFY TREATMENT LABELS FOR CONTROLS IN NEURAL AND CYTOTOX ASSAYS
-
-cat("\nVerifying control compound labels:\n")
-# view and standardize treatment names, so can compare all relevant values below
-dat4[, .N, by = "treatment"]
-dat4[grepl("DMSO",treatment), treatment := "DMSO"]
-
-# visually confirm if the PICRO, TTX, LYSIS were added before the second recording for MEA endpoints
-# varies across experiments, sometimes across days
-# if not, the PICRO, TTX, LYSIS wells only contained media for the MEA endpoints
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean"]
-view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
-# RESPONSE:
-# yes/no, it appears that the PICRO, TTX, LYSIS were added before the second treatment
-# rename the treatment in the wells as needed
-
-# for cytotoxicity assays, the "Media" wells at F1 should contain the LYSIS. Re-label the treatments to refect this
-
-# for Cell Titer Blue assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
-view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
-# make updates if needed
-# dat4[, AB.trt.finalized := FALSE] # set this to TRUE for individual plates as you update as needed
-# 
-# # for every other culture, the "Media" well in F1 contains Lysis at the time of the AB reading (or could change by well F1 vs by the name "Media"...)
-# dat4[AB.trt.finalized == FALSE & grepl("AB",acnm) & treatment == "Media", .(plate.id, experiment.date, rowi, coli, wllq, rval, wllq_notes)] # all are in row 6, col 1
-# dat4[AB.trt.finalized == FALSE & grepl("AB",acnm) & treatment == "Media", `:=`(treatment = "Lysis",conc = 10, AB.trt.finalized = TRUE)]
-
-# # view updated stripchart
-# plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(AB)",acnm)]
-# view_activity_stripchart(plotdat, title_additions = "Media renamed to Lysis")
-
-# for LDH assay:
-plotdat <- dat4[treatment %in% c("DMSO","PICRO","TTX","BIC","Media","Lysis","? Lysis","1:250 LDH","1:2500 LDH") & grepl("(LDH)",acnm)]
-view_activity_stripchart(plotdat, title_additions = "No Changes to Treatment Labels")
-
-# looks like media wells really do just contain Media
-# actually makes some sense based on the assay - 
-# first, 50uL of culture Media from each well in MEA plate is transfered to LDH plate (so F1 just contains Media in LDH plate)
-# then 20uL of Media is added to F1 in the MEA plate. Then (all?) of the contents are removed and mixed
-# a Media/Alamar Blue mixture is added to eadch well of MEA plate
-# then culture Media/Blue mixutre is taken from MEA plates to AB plates
-# all this to say, I understand now why the 
-# The only time when well F1 would have Lysis in the LDH assay is the same time when Lysis is added before the second recording,
-# which was already clearly marked in the Group 1 file. 
-# So LDH well treatments should usually = neural stats well treatments, if Lysis, PICRO, etc. were added before the second recording
-
-# final treatment updates:
-cat("Confirm that the rest of these treatments look normal (nothing NA, 0, etc):\n")
-cat(dat4[, unique(treatment)], sep = ", ")
-cat("\n")
-
+# RESUMe HERE
 
 # ASSIGN SPIDS
+```{r}
 cat("\nAssign spid's:\n")
 cat("Using spidmap file:",spidmap_file,"\n")
-spidmap <- as.data.table(read_excel(spidmap_file, sheet = use_sheet))
+spidmap <- as.data.table(read_excel(spidmap_file, sheet = spid_sheet))
 names(spidmap)
 setnames(spidmap, old = "NCCT ID", new = "spid")
 setnames(spidmap, old = "Chemical ID", new = "treatment")
-setdiff(unique(dat4$treatment), unique(spidmap$treatment))
+setdiff(unique(dat3$treatment), unique(spidmap$treatment))
 # [1]   
-dat4 <- merge(x = dat4, y = spidmap[, c("spid", "treatment")], all.x = TRUE, by = "treatment")
+dat3 <- merge(x = dat3, y = spidmap[, c("spid", "treatment")], all.x = TRUE, by = "treatment")
 
 # assign spids for the non-registered control compounds, e.g.: "Tritonx100" "Bicuculline"  "DMSO" "PICRO" "TTX" "MEDIA"
-dat4[is.na(spid),unique(treatment)]
+dat3[is.na(spid),unique(treatment)]
 # [1] 
-dat4[grepl("DMSO",treatment), spid := "DMSO"]
-dat4[treatment == "Media", spid := "Media"]
-dat4[treatment == "PICRO", spid := "Picrotoxin"]
-dat4[treatment == "TTX", spid := "Tetrodotoxin"]
-dat4[grepl("Lysis",treatment), spid := "Tritonx100"]
-dat4[grepl("Lysis",treatment), unique(conc), by = "treatment"]
-unique(dat4$spid) # confirm no NA spids
-if(any(is.na(unique(dat4$spid)))) {
-  stop(paste0("The following treatments don't have a corresponding spid:", dat4[is.na(spid), unique(treatment)]))
+dat3[grepl("DMSO",treatment), spid := "DMSO"]
+dat3[treatment == "Media", spid := "Media"]
+dat3[treatment == "PICRO", spid := "Picrotoxin"]
+dat3[treatment == "TTX", spid := "Tetrodotoxin"]
+dat3[grepl("Lysis",treatment), spid := "Tritonx100"]
+dat3[grepl("Lysis",treatment), unique(conc), by = "treatment"]
+unique(dat3$spid) # confirm no NA spids
+if(any(is.na(unique(dat3$spid)))) {
+  stop(paste0("The following treatments don't have a corresponding spid:", dat3[is.na(spid), unique(treatment)]))
 } else {
   cat("No spids are NA.\n")
 }
-cat("Number of unique spids:",dat4[,length(unique(spid))],"\n")
-
+cat("Number of unique spids:",dat3[,length(unique(spid))],"\n")
+```
 
 # PREPARE LDH P WELLS (must verify wllq, treatments first)
-dat4 <- prepare_LDH_p_wells(dat4)
+```{r}
+dat3 <- prepare_LDH_p_wells(dat3)
+```
 
 
 # ASSIGN WLLT
-dat4 <- assign_wllt(dat4)
+```{r}
+dat3 <- assign_wllt(dat3)
+```
 
 
 # CHECK CONC'S
+```{r}
+
 cat("\nFinalize Concentrations:\n")
-dat4[, conc_original := conc]
-dat4[, unique(conc)] # any NA's? any non-numeric? Any 0? does it look like conc correction was done?
+dat3[, conc_original := conc]
+dat3[, unique(conc)] # any NA's? any non-numeric? Any 0? does it look like conc correction was done?
 
 # update conc for DMSO, PICRO, TTX, BIC, and full Lysis wells
 # dmso
-dat4[treatment == "DMSO",unique(conc)]
+dat3[treatment == "DMSO",unique(conc)]
 # [1] "Control"
 # Use the percent DMSO by volume?
-# dat4[treatment == "DMSO", conc := "0.001"]
+# dat3[treatment == "DMSO", conc := "0.001"]
 
 # picro
-dat4[treatment == "PICRO", .N, by = "conc"]
+dat3[treatment == "PICRO", .N, by = "conc"]
 # 
 # based on lab notebook, this is usually 25
-# dat4[treatment == "PICRO", conc := "25"]
+# dat3[treatment == "PICRO", conc := "25"]
 
 # ttx
-dat4[treatment == "TTX", .N, by = "conc"]
+dat3[treatment == "TTX", .N, by = "conc"]
 # 
 # based on lab notebook, this is usually 1
-# dat4[treatment == "TTX", conc := "1"]
+# dat3[treatment == "TTX", conc := "1"]
 
 cat("\nConcentration Corrections:\n")
 # any other compounds to update??
 # need to do concentration correction??
 cat("CHANGES MADE/rationale")
 # cat("The following treatment have char conc. Will be set to NA:\n")
-# print(suppressWarnings(dat4[is.na(as.numeric(conc)), .N, by = c("spid","treatment","conc")]))
-# dat4[, conc := suppressWarnings(as.numeric(conc))]
+# print(suppressWarnings(dat3[is.na(as.numeric(conc)), .N, by = c("spid","treatment","conc")]))
+# dat3[, conc := suppressWarnings(as.numeric(conc))]
 
 # final updates, view conc's, make table of control conc's
-dat4 <- assign_common_conc(dat4)
+dat3 <- assign_common_conc(dat3)
+```
+
+## FINALIZE WLLQ
+```{r}
+# From combine, above
 
 
-# ASSIGN ACID
-cat("\nAssign ACId:\n")
-cat("(not doing this for now, since new acnm's need to be registered)\n")
-# dat4 <- add_acid(dat4) # holding off, need to register new acid's
+cat("\nFinalize Wllq:")
+# set wllq to zero where rval is NA
+cat("\nNA rval's:",dat3[wllq==1 & is.na(rval),.N])
+#
+cat("\nInf rval's (baseline==0):",dat3[wllq==1 & is.infinite(rval),.N])
+# 
+dat3[is.na(rval), `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "rval is NA; "))]
+dat3[is.infinite(rval), `:=` (wllq = 0, wllq_notes = paste0(wllq_notes, "rval is Inf; "))]
+cat("\nWell quality set to 0 for these rval's.\n")
 
+# do any other updates to wllq based on notes from lab notebook
+# e.g. misdosed, recording too long, etc.
+# for example, updateWllq(dat3, date = "20190530", plate = "MW68-0807", well = "C6", wllq_note = "Contamination", override_check = override_wllq_checks)
+```
 
-# check that all data is there, nothing is missing, view plots
-data_checks(dat4)
-
-# closing graphics after last plots
-graphics.off()
-
+```{r}
 # create a nice summary of wllq assignments for each well
-createWllqSummary(dat4, dataset_title)
+createWllqSummary(dat3, project_name)
 cat("(note that the wllq is not quite final -\nwllq will be updated for outlier DMSO wells will before creating lvl 0 snapshot)\n")
-
-# save dat4
-dat4 <- dat4[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3)]
-save(dat4, file = file.path(main.output.dir, paste0("output/",dataset_title,"_dat4_",as.character.Date(Sys.Date()),".RData")))
-cat("\ndat4 saved on:",as.character.Date(Sys.Date()), "\n")
-
-# you're done!
-
-```
-
-# Merge in wllq tables
-
-```{r}
-wllq.tb.by.well <- as.data.table(read.csv(file.path(dataset_title, 'wells_quality_assignments_by_well.csv')))
-wllq.tb.by.well.ldh <- wllq.tb.by.well[grepl('LDH',affected_endpoints)]
-wllq.tb.by.well.ldh[, acsn := 'LDH']
-wllq.tb.by.well.AB <- wllq.tb.by.well[grepl('(AB)|(CTB)',affected_endpoints)]
-wllq.tb.by.well.AB[, acsn := 'AB']
-wllq.tb.by.well.cyto <- rbind(wllq.tb.by.well.ldh, wllq.tb.by.well.AB)
-```
-
-# Scrap
-
-## To fix the date in teh experiment start time
-```{r}
-# If I wanted to fix the date --------------------------------------------------
-
-# - fix month (see testing below)
-# - is the day every single-digit?
-# - any risk the year is ever single-digit?
-# (maybe just say)
-dat1[grepl('[0-9]////[0-9]{2}////[0-9]{4}',experiment_start_time), est_date_format := '%m/%d/%Y']
-dat1[grepl('[0-9]{2}////[0-9]{2}////[0-9]{4}',experiment_start_time), est_date_format := '%M/%d/%Y']
-dat1[is.na(est_date_format)]
-# BUUUUT, maybe it's okay if the date is wrong? -> yeah, let's go with that
-# so let's just grab the time and sort that way
-
-# testing -------------------------------------------------------------------------
-as.POSIXlt(x = '11:37:00', format = '%H:%M:%OS')
-as.numeric(as.POSIXlt(x = '11:37:00', format = '%H:%M:%OS'))
-as.POSIXlt.character(x = '11:37:00', format = '%H:%M:%OS')
-
-# note that the "m" must match the format of the month
-as.POSIXlt('8/24/2021 1:34:26 PM', format = '%M/%d/%Y %H:%M:%OS %p')
-# [1] "2021-05-24 01:34:26 EDT"
-# month is 05, instead of 08
-as.POSIXlt('8/24/2021 1:34:26 PM', format = '%m/%d/%Y %H:%M:%OS %p')
-# "2021-08-24 01:34:26 EDT"
-# correct!
-```
-
-## Determine run type
-
-Old code:
-
-```{r}
-# RESUME HERE --------------------------------
-# Motivation: run type tags in these files are quite inconsistent
-# Would be so much easier to just use the file times as reported by axis
-# dat1 from 12/30/2021 was made with updated level 1 functions
-# contains exp start time, original file time,
-# but no wllq or run type
-
-# Any values NA?
-dat1 <- get_latest_dat('dat1', dataset_title)
-dat1[, lapply(.SD, function(x) sum(is.na(x))), .SDcols = names(dat1)]
-# So the activity_value is the only column that is NA sometimes -> didn't actually have to use fill = T
-
-# Resolving warnings of missing plate.id's
-dat1[plate.id == 'MW', .N, by = .(experiment.date, srcf)]
-#    experiment.date                                                              srcf    N
-# 1:        20210824 AC_20210811_MW75-9119_13(000)_Neural Statistics Compiler(000).csv 2064
-# 2:        20210824 AC_20210811_MW75-9119_13(001)_Neural Statistics Compiler(000).csv 2064
-# 3:        20210824 AC_20210811_MW75-9120_13(000)_Neural Statistics Compiler(000).csv 2064
-# 4:        20210824 AC_20210811_MW75-9120_13(001)_Neural Statistics Compiler(000).csv 2064
-# 5:        20210824 AC_20210811_MW75-9201_13(000)_Neural Statistics Compiler(000).csv 2064
-# 6:        20210824 AC_20210811_MW75-9201_13(001)_Neural Statistics Compiler(000).csv 2064
-dat1[plate.id == 'MW', plate.id := stri_extract_first(srcf, regex = 'MW[0-9\\-]{7}')]
-dat1[experiment.date == '20210824', .N, by = .(srcf, plate.id)]
-#                                                                 srcf  plate.id    N
-# 1: AC_20210811_MW75-9119_13(000)_Neural Statistics Compiler(000).csv MW75-9119 2064
-# 2: AC_20210811_MW75-9119_13(001)_Neural Statistics Compiler(000).csv MW75-9119 2064
-# 3: AC_20210811_MW75-9120_13(000)_Neural Statistics Compiler(000).csv MW75-9120 2064
-# 4: AC_20210811_MW75-9120_13(001)_Neural Statistics Compiler(000).csv MW75-9120 2064
-# 5: AC_20210811_MW75-9201_13(000)_Neural Statistics Compiler(000).csv MW75-9201 2064
-# 6: AC_20210811_MW75-9201_13(001)_Neural Statistics Compiler(000).csv MW75-9201 2064
-# looks good!!
-
-# Next step is to assign the run_type
-# (see determine_run_type -> next need to address some formatting in times, then how to check all 5 run type assignment methods),
-# followed by assigning the wllq
-# Then make this flow into existing level 2
-
-# Determine the run type based on ordering of the run_type tag
-# (which was determined by the first tag in the file names that 
-# is unique for each pair of consecutive files when sort by file name) 
-file.names.split <- stri_split(str = names(run.type.tag.location), fixed = '_')
-run.type.tags <- unlist(lapply(1:length(run.type.tag.location), function(i) file.names.split[i][[1]][run.type.tag.location[i]]))
-run.type.tag.location.tb <- data.table('srcf' = names(run.type.tag.location), 
-                                       'run.type.tag.location' = run.type.tag.location,
-                                       'run.type.tag' = run.type.tags)
-dat1 <- merge(dat1, run.type.tag.location.tb, by = 'srcf', all.x = T)
-dat1[, file_run_type_tag_rank := frank(run.type.tag, ties.method = 'dense'), by = .(experiment.date, plate.id)]
-
-# Convert file times from character to a comparable numeric value, e.g. POSIX?
-# e.g. as.POSIXct(..., format = ...)
-dat1[, experiment_start_time_posix := as.POSIXlt(experiment_start_time, format = c('%M/%d/%Y %H:%M:%OS')), by = .(srcf)]
-dat1[, original_file_time_posix := as.POSIXlt(original_file_time, format = c('%M/%d/%Y %H:%M:%OS')), by = .(srcf)]
-
-# Check for and fix any NAs in POSIX file time (time may be in incorrect format, or AM/PM did not copy from csv)
-dat1[is.na(experiment_start_time_posix) | is.na(original_file_time_posix), .N, by = .(srcf, original_file_time, experiment_start_time)]
-#                                         srcf original_file_time experiment_start_time    N
-# 1: AC_20210428_MW75-8205_15_00(000)(000).csv    5/13/2021 12:56       5/13/2021 12:33 2112
-# How does the treated file look?
-dat1[grepl('AC_20210428_MW75-8205_15',srcf), .N, by = .(srcf, original_file_time)]
-#                                         srcf  original_file_time    N
-# 1: AC_20210428_MW75-8205_15_00(000)(000).csv     5/13/2021 12:56 2112
-# 2: AC_20210428_MW75-8205_15_00(001)(000).csv 05/13/2021 14:03:00 2112
-# huh, so the dates in the treated file are formatted normally
-# I confirmed in the csv file that 5/13/2021 12:56 is "PM" ;)
-dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
-     original_file_time_posix := as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))]
-dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
-     experiment_start_time_posix := as.POSIXlt('05/13/2021 12:33:00', format = c('%M/%d/%Y %H:%M:%OS'))]
-
-# code snip for Kelly
-dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', .N] # 2112
-as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))
-dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', original_file_time_posix := as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))]
-dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', .N, by = .(original_file_time_posix)]
-class(as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS')))
-class(dat1$original_file_time_posix)
-
-dat1[srcf == 'AC_20210428_MW75-8205_15_00(000)(000).csv', 
-     original_file_time_posix := as.Date(as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS')))]
-
-dat1[, original_file_time_posix := as.Date(as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS')))]
-dat1[, original_file_time_posix2 := as.POSIXlt('05/13/2021 12:56:00', format = c('%M/%d/%Y %H:%M:%OS'))]
-
-
-# Determine the run type based on 3 other methods -> these methods are likely more reliable, but will compare them all
-dat1[, file_exp_start_time_rank := frank(experiment_start_time_posix, ties.method = 'dense'), by = .(experiment.date, plate.id)]
-dat1[, file_original_file_time_rank := frank(original_file_time_posix, ties.method = 'dense'), by = .(experiment.date, plate.id)]
-dat1[, file_name_rank := frank(srcf, ties.method = 'dense'), by = .(experiment.date, plate.id)]
-
-# How to compare all columns?
-# one idea...
-dat1[, multiple_unique_ranks := 
-       pmax(file_run_type_tag_rank, file_exp_start_time_rank, file_original_file_time_rank, file_name_rank)
-     - pmin(file_run_type_tag_rank, file_exp_start_time_rank, file_original_file_time_rank, file_name_rank)]
-
-
-
-
-=======
-  >>>>>>> master
-# OUTPUT --------------------------------------------------------- 
-# Level 1 - Extract All Data:
-#   
-#   Reading from TSCA2019_neural_stats_files_log_2021-12-16.txt...
-# Got 220 files.
-# Reading data from files...
-# Processed AC_20201125_MW71-7111_13_00(001)(000).csv 
-# Processed AC_20201125_MW71-7111_13_00(002)(000).csv 
-# Processed AC_20201125_MW71-7112_13_00(000)(000).csv 
-# Processed AC_20201125_MW71-7112_13_00(001)(000).csv 
-# Processed AC_20201125_MW71-7115_15_00(000)(000).csv 
-# Processed AC_20201125_MW71-7115_15_00(001)(000).csv 
-# ...
-# TSCA2019_dat1_2021-12-16.RData is ready.
-# Summary of dates/plates with wllq=0 at Level 1:
-# (73 plates afffected)
-# over 50 instances of this warning:
-# Warning messages:
-# 1: In fileToLongdat(new_files[i], run.type.tag.location[i],  ... : 
-#                       run type cannot be determined for AC_20210505_MW75-8207_13_35(000)(000).csv.
-#                     No wllq checks will be done for this recording.
-# ---------------------------------------------------------------- 
-
-# Options:
-# - try to determine how the function works to determine the run type, edi tit so that all my file names will be interpretted correctly
-# - just assign the run_type here, and re-do the wllq assignments here
-
-# Let's just review how the function works,
-# then see how bad this situation is (can I write a simple rule, or much easier to just fix on a case by case basis here?)
-
-
-
-# view dat1
-dat1 <- get_latest_dat(lvl = "dat1", dataset_title)
-
-dat1[, .N, by = .(run_type)]
-#        run_type      N
-# 1:     baseline 301344
-# 2: 35(000)(000)  40128
-# 3: 35(001)(000)  38016
-# 4: 35(002)(000)  10560
-# 5: 35(003)(000)   8448
-# 6: 35(004)(000)   8448
-# 7: 35(005)(000)   8448
-# 8: 35(006)(000)   4224
-# 9: 35(007)(000)   4224
-# 10: 35(008)(000)   4224
-# 11: 35(009)(000)   4224
-# 12: 35(010)(000)   4224
-# 13: 35(011)(000)   4224
-# 14: 15(000)(000)   4224
-# 15: 15(001)(000)   4224
-
-# Hmm... I'm curious if all/most of those not labelled baseline are just treated,
-# perhaps not much to sort through?
-dat1[, .N, by = .(run_type == 'baseline' | run_type == '35(000)(000)')]
-# run_type      N
-# 1:     TRUE 341472
-# 2:    FALSE 107712
-# Nope, there are far more that are currently labelled "baseline",
-# So I'm guessing that several that are labelled baseline
-# are not actually baseline
-
-dat1[run_type == 'baseline', .N, by = .(srcf)]
-#                                         srcf    N
-# 1: AC_20201104_MW71-7104_13_00(000)(000).csv 2064
-# 2: AC_20201104_MW71-7104_13_00(001)(000).csv 2064
-# 3: AC_20201104_MW71-7105_13_00(001)(000).csv 2064
-# 4: AC_20201104_MW71-7105_13_00(002)(000).csv 2064
-# Oh yeah, this is definitely not right
-
-
-# RESUME HERE -------------------------------------------------------------
-
-# Try to figure out how to assign the run type,
-# first just in this code, then see if you can translate a rule for most cases to fileToLongdat()
-# If you need to ask Kathleen or ask her to rename in some cases, that's valid too
-# But also thinking about the future... we need something that's goign to be dummy-proof
-# (either a hard and fast naming rule, or )
-
-
-# other things could check (from running this a logn time ago:) ------------
-print(dat1[, .N/length(unique(dat1$acnm)), by = "wllq_notes"])
-# view all experiment.date's and plate.id's. Are there any NA/missing labels?
-
-# making sure the baseline/treatment labelling looks correct
-dat1[, .N, by = .(apid, srcf, run_type)] # oh dear, all are labelled baseline rn!
-
-# add teh run type tag location to each srcf
-run.type.tag.tb <- data.table(srcf = names(run.type.tag.location), run.type.tag.location = run.type.tag.location)
-dat1 <- merge(dat1, run.type.tag.tb, by = 'srcf')
-dat1[run.type.tag.location == 5, run.type.tag := stri_replace_all_regex(srcf, pattern = paste0(c(rep('[^_]*_',times=4)),collapse=''), replacement = '')]
-dat1[run.type.tag.location == 6, run.type.tag := stri_replace_all_regex(srcf, pattern = paste0(c(rep('[^_]*_',times=5)),collapse=''), replacement = '')]
-dat1[, run.type.tag := stri_replace_all_regex(run.type.tag, pattern = '\\.csv', '')]
-dat1[, baseline.run.type.tag := sort(unique(run.type.tag))[1], by = .(apid, plate.id, experiment.date)]
-dat1[, run_type := ifelse(run.type.tag == baseline.run.type.tag, 'baseline', 'treated')]
-dat1[, .N, by = .(apid, srcf, run_type, run.type.tag)] # looks good!
-
-# At Kathleen's request, getting the recording name for each file
-extract_recording_name <-  function(filei) {
-  
-  file_scan <- scan(file = filei, what = character(), sep = "\n", blank.lines.skip = F, quiet=T) # empty lines will be just ""
-  file_col1 <- sapply(file_scan, function(x) strsplit(x, split = ",")[[1]][1], USE.NAMES = F) # empty lines will be NA
-  file_col2 <- sapply(file_scan, function(x) strsplit(x, split = ",")[[1]][2], USE.NAMES = F) # if nothing in second col, will be NA
-  
-  # get relevant data from file header
-  headdat <- data.table(file_col1, file_col2)
-  
-  rec.name <- headdat[grepl('Recording Name',file_col1), file_col1]
-  return(data.table(recording_name = rec.name, srcf = basename(filei)))
-  
-}
-
-files <- read_files(main.output.dir)
-# Reading from TSCA2019_neural_stats_files_log_2021-05-10.txt...
-# Got 84 files.
-setdiff(basename(files), unique(dat1$srcf)) # empty!
-add.dat <- data.table()
-for (filei in files) {
-  add.dat <- rbind(add.dat, extract_recording_name(filei))
-}
-str(add.dat)
-dat1 <- merge(dat1, add.dat, by = 'srcf', all = T)
-dat1[is.na(recording_name)] # empty
-dat1[is.na(run_type)] # empty
-rm(add.dat)
-
-# export the requested data to excel
-# I'm going to try to note the group, from the srcf name
-filename.tb <- data.table(srcf = basename(files), fullname = files)
-dat1 <- merge(dat1, filename.tb, by = 'srcf', all = T)
-dat1[, .N, by = .(fullname)]
-dat1[, culture_folder := basename(dirname(dirname(fullname)))]
-dat1[, .N, by = .(culture_folder)]
-
-# I'm pretty sure they won't want the txt prefix in the recording name
-dat1[, recording_name := sub('Recording Name: ','',recording_name)]
-dat1[, culture.date := sub(' .*$','',culture_folder)]
-dat1[culture.date != recording_name, .N, by = .(culture.date, recording_name)]
-# not all equa
-dat1[experiment.date != recording_name, .N, by = .(culture.date, recording_name)] # many cases
-# I guess I'll include all 3 for now
-dat1[, group := sub('^[^G]* ','',culture_folder)]
-dat1[, .N, by = .(group)]
-
-prep.dat <- dat1[run_type == 'baseline' & grepl('^2021',experiment.date) & acsn %in% c('Weighted Mean Firing Rate (Hz)','Number of Active Electrodes'), 
-                 .(culture.date, group, experiment.date, recording_name, plate.id, well, acsn, activity_value, wllq, wllq_notes)]
-setnames(prep.dat, old = c('experiment.date','plate.id'), new = c('experiment_date','plate'))
-prep.dat2 <- dcast(prep.dat, culture.date + group + experiment_date + recording_name + plate + well + wllq + wllq_notes ~ acsn, value.var = 'activity_value')
-prep.dat2
-
-prep.dat2[, .N, by = .(culture.date, group, experiment_date)]
-
-wb <- createWorkbook()
-openxlsx::addWorksheet(wb, sheetName = 'Sheet1')
-writeData(wb, sheet = 1, x = prep.dat2)
-saveWorkbook(wb, file = 'TSCA2019_MEA_Acute_baseline_recordings_from_2021.xlsx', overwrite = T)
-rm(dat1)
-```
-
-## Code snippets cut from fileToLongdat
-
-### determining run type
-
-```{r}
-# determine run type from filei
-# _00 is for baseline. _01 is for treated
-# user enters run.type.tag.location in input file names (usually 5)
-# e.g. TC_20190508_MW68-0808_13_00(000).csv is baseline, and TC_20190508_MW68-0808_13_01(000).csv is treated.
-# ignore the 0's and 1's that come after the first 2 digits in that tag
-run.type.tag <- strsplit(basename(filei), split = "_")[[1]][run.type.tag.location]
-if (guess_run_type_later) {
-  run_type <- sub("\\.csv","",run.type.tag)
-} else{
-  run_type <- switch(substring(run.type.tag,1,2), 
-                     "00" = "baseline",
-                     "01" = "treated",
-                     sub("\\.csv","",run.type.tag))
-}
-if(!run_type %in% c('baseline','treated')) warning(paste0("\nrun type cannot be determined for ",basename(filei),'.\nNo wllq checks will be done for this recording.'))
-
 ```
 
 
-# Overall checks
 
-## Check that all parameters are registered in invitrodb
-
+## Check all acnm are registered in invitrodb
 
 **Replace below with just checking that all export_ready == 1 endpoitns are present
 
@@ -1643,11 +1432,214 @@ res[, .N, by = .(missing_params, setting_axis.version)]
 
 I am confident that no one is haphazardly selected which parameters to include. I think it all depends on the versions of the machine/software. So we'll just include all provided info and keep rolling.
 
-Confirm that the main 15 are present in every file
+Confirm that the main 15 are present in every file?
+# Note the vehicle controls per plate
+
+Check if any plates have multiple vehicle controls
 
 ```{r}
-library(tcpl)
-tcplConf(drvr = 'MySQL')
-dat1[]
+# Check if any plates have multiple vehicle controls
+# (if multiple are present on a given plate, consider the normalization method and/or apid definition for the given plate)
+dat3[, num_vehicle_control_types_per_plate := length(unique(treatment[wllt == 'n'])), by = .(apid)]
+dat3[num_vehicle_control_types_per_plate > 1]
+
+# View the vehicle controls on these plates
+# dat3[num_vehicle_control_types_per_plate > 1 & wllt == 'n', .N, by = .(apid, treatment, spid)]
 ```
 
+
+# Check for NA rvals
+
+Check for any NA or infinite rvals where wllq == 1. In the ToxCast pipeline, any NA rval will be set to wllq = 0 (at level 2).
+
+Check for NA's in all parameters other than the 'DIV' parameters.
+In these cases, if there are any NA rvals with wllq == 1, that indicates there was a problem in the data files, data collection, and/or pre-processing. These instances warrant further investigations
+```{r}
+dat3[(is.na(rval) | is.infinite(rval)) & wllq == 1 & !grepl('DIV',acnm), .N, by = .(acnm)]
+stopifnot(nrow(dat3[is.na(rval) & wllq == 1 & !grepl('DIV',acnm)]) == 0)
+```
+
+Note NA's in the DIV-specific parameters. These can be left as NA, but just note the occurrence
+```{r}
+dat3[(is.na(rval) | is.infinite(rval)) & wllq == 1 & grepl('DIV',acnm), .N, by = .(acnm)]
+```
+
+# For repeated treatments, determine which culture(s) to keep
+
+Sometimes a treatment is repeated in multiple cultures within a project. This is usually due to some unwanted results in the first culture, e.g., high variability, precipitate, or cytotoxicity. In any case, discuss with lab which culture(s) we want to keep for each repeated treatment. Make graphs to visualize as needed. For cultures that we don't want to keep for a given treatment, set wllq := 0 and add a wllq_note.
+
+```{r}
+# define the "assay" for every row of dat
+dat3[grepl("LDH",acnm), assay := 'LDH']
+dat3[grepl("AB",acnm), assay := 'AB']
+dat3[is.na(assay), assay := 'NFA']
+
+# Identify treatments tested in multiple cultures for a given assay
+dat3[wllq == 1 & wllt == 't', .(num_cultures = length(unique(culture.date)),
+                                cultures = paste0(sort(unique(culture.date)),collapse = ",")),
+     by = .(treatment, assay)][num_cultures > 1]
+```
+
+# Confirm every treatment has some data with wllq=1
+
+```{r}
+all.treatments <- dat3[wllt == 't', unique(treatment)]
+dat3[wllq == '1', setdiff(all.treatments, treatment)]
+```
+
+For this example - since we aren't including the entire data set, this is okay, this affected compound needed to be repeated
+
+```{r}
+dat3[treatment == '7126 B1', .N, by = .(culture.date, wllq, wllq_notes)]
+```
+
+# Check for the expected number of technical replicates for every treatment-conc 
+
+Usually there are 3 technical replicates, unless the treatment was intentionally repeated. Again, this check serves to check for potential typos
+
+```{r}
+dat3[wllt == 't', 
+     .(num_replicates = length(unique(full_well_id))), by = .(treatment, spid, conc)][num_replicates != 3]
+```
+
+
+# Data usability checks
+
+Set wllq to 0 for apid where the activity in control wells is very low (specifically where the median of controls on DIV 12 is < 10 spikes per min or < 2 active electrodes).
+```{r}
+# Plates with MFR < 10 spikes per minute on DIV 12
+apid.low.mfr <- dat3[wllq == 1 & wllt == 'n' & grepl("firing_rate_mean_DIV12",acnm),
+                     .(bval = median(rval, na.rm = T)), 
+                     by = .(apid)][bval < 10/60, unique(apid)]
+
+# Plates with < 2 active electrodes on DIV 12
+apid.low.ae <- dat3[wllq == 1 & wllt == 'n' & grepl("active_electrodes_number_DIV12",acnm), 
+                    .(bval = median(rval, na.rm = T)), 
+                    by = .(apid)][bval < 2, unique(apid)]
+
+# View affected plates
+exclude.apid <- union(apid.low.mfr, apid.low.ae)
+cat('Plates with very low activity on DIV 12 for control wells: ')
+print(dat3[apid %in% exclude.apid & (grepl("active_electrodes_number_DIV12",acnm) | grepl("firing_rate_mean_DIV12",acnm)) & wllt == "n", 
+           .(apid, acnm_short, rval)])
+
+# Set wllq to 0 for affected plates
+dat3[apid %in% exclude.apid, `:=`(wllq = 0,
+                                  wllq_notes = paste0("Controls low activity on DIV 12 (median MFR < 10 spikes per min or nAE < 2); ",wllq_notes))]
+
+
+```
+
+
+# Data summaries 
+
+## Counts 
+
+**Number of cultures dates:**
+
+```{r}
+dat3[, length(unique(sub("_.+$","",apid)))]
+```
+
+**Range of culture dates:***
+```{r}
+dat3[, range(sub("_.+$","",apid))]
+```
+
+**Number of plates tested:**
+```{r}
+dat3[, length(unique(apid))]
+```
+
+**Number of compounds tested:**
+```{r}
+dat3[wllt == "t", length(unique(spid))]
+```
+
+**Wllq counts for all data points:**
+```{r}
+print(dat3[, .N, by = "wllq"]) # note if wllq is NA anywhere
+```
+
+**Number of unique assay componentss present:**
+(there should be 2 cyto + 17 AUC + 4*17 DIV = 87)
+```{r}
+length(unique(dat$acnm))
+```
+
+**Any plates don't have 48 wells for each component?** 
+```{r}
+dat3[, .N, by = .(apid, acnm)][N != 48]
+```
+
+**Any plates don't have 6 control wells for each component?**
+```{r}
+print(dat3[wllt == "n", .N, by = c("acnm","apid")][N != 6])
+```
+
+**Range of assay component values**
+```{r}
+dat3[wllq == 1, .(min = format(min(rval,na.rm=T),digits=2,scientific = F), 
+                  median = format(median(rval,na.rm=T),digits=2,scientific = F),
+                  max = format(max(rval,na.rm=T),digits=2,scientific = F),
+                  num_NA = sum(is.na(rval))), by = .(acnm_short)][order(acnm_short)]
+```
+
+## Visualizations
+
+```{r}
+
+```
+
+
+## Run dataset checks
+```{r}
+
+# check that all data is there, nothing is missing, view plots
+data_checks(dat3)
+```
+
+
+
+# Save final table -nfa
+
+acute
+```{r}
+# save dat3
+dat3 <- dat3[, .(treatment, spid, experiment.date, plate.id, apid, rowi, coli, conc, acnm, wllt, wllq, wllq_notes, rval, srcf, dat3)]
+save(dat3, file = file.path(main.output.dir, paste0("output/",project_name,"_dat3_",as.character.Date(Sys.Date()),".RData")))
+cat("\ndat3 saved on:",as.character.Date(Sys.Date()), "\n")
+```
+
+
+```{r}
+# Note that the cndx here is different than the cndx applied in tcpl
+setnames(dat, old = 'cndx', new = 'cndx_pre_pro')
+
+# Select columns to save
+keep.columns <- c(
+  
+  # Columns needed for tcpl lvl0
+  'acnm','apid', 'rowi', 'coli', 'conc','rval','srcf','spid','wllt','wllq', 
+  
+  # Additional columns for our documentation
+  'acsn',  
+  'treatment', 'treatment_srcf','spidmap_file',
+  'cndx_pre_pro','conc_srcf', 'units',  'stock_conc', 'stock_conc_units',
+  'wllq_notes', 'wllq_ref'
+)
+dat <- dat3[, .SD, .SDcols = keep.columns]
+
+# Save the file
+setkey(dat, NULL) # remove keys to make the file smaller
+nfa.dat.description <- paste0(project_name,' MEA NFA pre-processed data
+Date prepared: ',as.character.Date(Sys.Date()),
+'\nTo do before tcplWriteLvl0:
+* Exclude acnms that are for a specific DIV (see where grepl("_DIV",acnm))
+* Check that none of the data has been pipelined before (i.e., merge with current level 0 data and check for duplicates by apid, rowi, coli, and acnm)')
+cat(nfa.dat.description)
+save(dat, nfa.dat.description, 
+     file = file.path(root.output.dir, project_name, "output", paste0(project_name,"_for_tcpl_lvl0.RData")))
+```
+
+You made it!

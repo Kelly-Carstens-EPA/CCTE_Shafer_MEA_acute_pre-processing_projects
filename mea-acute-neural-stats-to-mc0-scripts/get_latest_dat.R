@@ -1,9 +1,9 @@
 # get most recent dat4 (or other) from all folders, or a specific folder
 
-get_latest_dat <- function(lvl = "dat4", dataset_titles = NULL) {
+get_latest_dat <- function(lvl = "dat4", project_names = NULL) {
   
   if (!(lvl %in% c(paste0("dat",1:4),"mc0"))) stop(paste0("'lvl' must be in ",paste0(c(paste0("dat",1:4),"mc0"),collapse=", ")))
-  if (is.null(dataset_titles)) {
+  if (is.null(project_names)) {
     # # kinda janky - all folders with no underscores and a "20" will be used
     # dirs <- list.dirs(full.names = F, recursive = F)
     # dirs <- dirs[grepl(pattern = "20",dirs) & !grepl("_",dirs)]
@@ -13,7 +13,7 @@ get_latest_dat <- function(lvl = "dat4", dataset_titles = NULL) {
     cat(paste0("Getting data from folders ",paste0(dirs,collapse=", ")),"\n")
   }
   else {
-    dirs <- dataset_titles
+    dirs <- project_names
   }
   
   dat <- data.table()

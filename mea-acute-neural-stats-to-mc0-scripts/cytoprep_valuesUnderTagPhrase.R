@@ -19,17 +19,6 @@ valuesUnderTagPhrase <- function(dat_dt, tagPhrase, value.name, cyto_type) {
     add.dat[, "plate.id" := paste0("MW",plate.id)]
     if (length(plate.id) == 0) stop(paste0("plate id not found for"))
     
-    # check for NA values on the current plate (except for those we excpect to be NA)
-    if (value.name == "treatment") {
-      test_for_na <- any(is.na(add.dat[Row %in% LETTERS[1:6] & coli %in% 1:8]))
-    }
-    else {
-      test_for_na <- any(is.na(add.dat[(Row %in% LETTERS[1:6] & coli %in% 1:8) | (Row=="G" & coli %in% 4:5) | (Row=="H" & coli %in% 1:6)]))
-    }
-    if (test_for_na) {
-      warning(paste0("\n Some ",cyto_type," ",value.name," on ",plate.id," are NA (may include some cells that are not needed for final cytodat)"))
-    }
-    
     tag_dat <- rbind(tag_dat, add.dat)
     rm(add.dat)
   }

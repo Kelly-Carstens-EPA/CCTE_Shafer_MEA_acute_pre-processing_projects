@@ -1,5 +1,5 @@
 # function to run all files through fileToLongDat and print summary of wllq changes
-extractAllData <- function(dataset_title, 
+extractAllData <- function(project_name, 
                            acsn_map,
                            append = F, 
                            plate.id.tag.location = NULL,
@@ -10,8 +10,8 @@ extractAllData <- function(dataset_title,
   # load the existing data, if any
   if (append) {
     # read the data from the most recent dat1 RData file
-    data_files <- list.files(path = file.path(dataset_title,'output'), 
-                             pattern = paste0(dataset_title,"_dat1"), recursive = F, full.names = T)
+    data_files <- list.files(path = file.path(project_name,'output'), 
+                             pattern = paste0(project_name,"_dat1"), recursive = F, full.names = T)
     data_file <- data_files[order(basename(data_files), decreasing = T)[1]] # get the most recent data file
     load(data_file)
     completed_files <- dat1[, unique(srcf)]
@@ -21,7 +21,7 @@ extractAllData <- function(dataset_title,
   }
   
   # get the files from the files_log that are not already in dat1
-  all_files <- read_files(dataset_title, files_type = "neural_stats")
+  all_files <- read_files(project_name, files_type = "neural_stats")
   new_files_basenames <- sort(setdiff(basename(all_files), completed_files))
   new_files <- all_files[basename(all_files) %in% new_files_basenames]
   

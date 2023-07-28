@@ -1,12 +1,12 @@
 # script to gather the wanted mea acute files
 
-selectInputFiles <- function(start.dir, dataset_title, files_type = "neural_stats", append = FALSE){
+selectInputFiles <- function(start.dir, project_name, files_type = "neural_stats", append = FALSE){
   
   # get starting folder, to initialize starting screen
   culture.dirs <- list.dirs(path = start.dir, recursive = F)
   
   if (append) {
-    file_names <- read_files(dataset_title, files_type = files_type)
+    file_names <- read_files(project_name, files_type = files_type)
   } else {
     file_names <- c()
   }
@@ -27,17 +27,17 @@ selectInputFiles <- function(start.dir, dataset_title, files_type = "neural_stat
   # just in case any files were selected twice
   file_names <- unique(file_names)
   
-  writeLogFile(file_names, dataset_title, files_type)
+  writeLogFile(file_names, project_name, files_type)
 }
 
-writeLogFile <- function(file_names, dataset_title, files_type) {
+writeLogFile <- function(file_names, project_name, files_type) {
   
   # create log file name
-  log_file <- file.path(dataset_title, paste0(dataset_title, "_",files_type,"_files_log.txt"))
+  log_file <- file.path(project_name, paste0(project_name, "_",files_type,"_files_log.txt"))
   
   # create the log file
   sink(file = log_file, append = F)
-  cat(paste0(dataset_title," files used for MEA acute pre-processing for TCPL\n"))
+  cat(paste0(project_name," files used for MEA acute pre-processing for TCPL\n"))
   cat("File types: ",files_type,"\n",sep="")
   cat("Created with the script gather_files-functions.R\n")
   cat("Date ran: ")
@@ -61,9 +61,9 @@ writeLogFile <- function(file_names, dataset_title, files_type) {
 }
 
 
-read_files <- function(dataset_title, files_type = "neural_stats") {
+read_files <- function(project_name, files_type = "neural_stats") {
   
-  files_log <- list.files(dataset_title, pattern = paste0(files_type,"_files_log"), recursive = F, full.names = T)
+  files_log <- list.files(project_name, pattern = paste0(files_type,"_files_log"), recursive = F, full.names = T)
   # (to accommodate older formats when I wasn't relying on version control)
   if (length(files_log) > 1) {
       files_log <- files_log[order(basename(files_log), decreasing = T)[1]] # get the most recent log file  stopifnot(length(files_log) == 1)  

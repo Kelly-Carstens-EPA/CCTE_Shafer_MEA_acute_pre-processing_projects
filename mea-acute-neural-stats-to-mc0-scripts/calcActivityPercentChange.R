@@ -1,11 +1,11 @@
 # function to calculate the percent change values
 # result is dat2
-calcActivityPercentChange <- function(dataset_title) {
+calcActivityPercentChange <- function(project_name) {
   
   # read the data from the most recent dat1 RData file
   cat("\n\nLevel 2 - Collapse Data by Plate ID:\n")
   cat("\nLoading...\n")
-  dat1 <- get_latest_dat(lvl = "dat1",dataset_title)
+  dat1 <- get_latest_dat(lvl = "dat1",project_name)
   
   cat("\nCollapsing treated and baseline data...")
 
