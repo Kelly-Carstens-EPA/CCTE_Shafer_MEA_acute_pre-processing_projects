@@ -1,4 +1,5 @@
 # get most recent dat4 (or other) from all folders, or a specific folder
+# no longer needed, will just load desired RData files explicitly
 
 get_latest_dat <- function(lvl = "dat4", project_names = NULL) {
   

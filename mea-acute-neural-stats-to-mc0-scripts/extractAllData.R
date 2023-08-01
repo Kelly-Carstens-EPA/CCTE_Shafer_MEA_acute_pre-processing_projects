@@ -9,19 +9,19 @@ extractAllData <- function(project_name,
   
   # load the existing data, if any
   if (append) {
-    # read the data from the most recent dat1 RData file
+    # read the data from the most recent dat.neural.stats RData file
     data_files <- list.files(path = file.path(project_name,'output'), 
-                             pattern = paste0(project_name,"_dat1"), recursive = F, full.names = T)
+                             pattern = paste0(project_name,"_dat.neural.stats"), recursive = F, full.names = T)
     data_file <- data_files[order(basename(data_files), decreasing = T)[1]] # get the most recent data file
     load(data_file)
-    completed_files <- dat1[, unique(srcf)]
+    completed_files <- dat.neural.stats[, unique(srcf)]
   } else {
-    dat1 <- data.table()
+    dat.neural.stats <- data.table()
     completed_files <- c()
   }
   
-  # get the files from the files_log that are not already in dat1
-  all_files <- read_files(project_name, files_type = "neural_stats")
+  # get the files from the files_log that are not already in dat.neural.stats
+  all_files <- readFilesLog(project_name, files_type = "neural_stats")
   new_files_basenames <- sort(setdiff(basename(all_files), completed_files))
   new_files <- all_files[basename(all_files) %in% new_files_basenames]
   
@@ -35,10 +35,14 @@ extractAllData <- function(project_name,
                              noisy_functions = noisy_functions)
     newdat <- rbind(newdat, add.dat)
     rm(add.dat)
+    if (i %% 50 == 0)
+      cat('...',i,'complete\n')
   }
   
-  dat1 <- rbind(dat1, newdat)
+  dat.neural.stats <- rbind(dat.neural.stats, newdat)
   
-  return(dat1)
+  cat('Done!\n')
+  
+  return(dat.neural.stats)
 
 }

@@ -1,3 +1,17 @@
+#' Title
+#'
+#' @param filei neural statistics compiler file to be read
+#' @param acsn_map map of assay component names as they appear in neural statistics compiler to the acnm's registered in TCPL
+#' @param num_wells_per_plate number of wells per plate. Used to restrict the number of data rows read 
+#' @param plate.id.tag.location  # (for backwards compatibility) define the underscore-separated component of the file name that contains the plate ID 
+#' (e.g., If file name is "20201118_MW78-009_000.csv, then plate.id.tag.location = 2). Preferred setting is to leave this as NULL and to get plate ID from the file body, 
+#' which is probably less prone to typo's)
+#' @param noisy_functions whether to display output to document progress
+#'
+#' @return
+#' @export
+#'
+#' @examples
 fileToLongdat <- function(filei, 
                           acsn_map,
                           num_wells_per_plate = 48, 
@@ -92,9 +106,6 @@ fileToLongdat <- function(filei,
   
   if (noisy_functions) {
     cat("Processed",basename(filei), "\n")
-  }
-  else {
-    cat(".")
   }
   
   return(longdat)

@@ -8,7 +8,7 @@ getAllCytoData <- function(project_name, set_negatives_rvals_to_zero = TRUE) {
   
   # only need to specifiy files_log if you want to use a specific files_log
   # instead of just the most recent calculations files log
-  calc_files <- read_files(project_name, files_type = "calculations")
+  calc_files <- readFilesLog(project_name, files_type = "calculations")
   
   cat("\nReading data from files...\n")
   

@@ -14,7 +14,8 @@ getAssayData <- function(cyto_type, sourcefile) {
   longdat <- merge(treatment_dat[!is.na(Row)], conc_dat[!is.na(Row)], by = c("Row","coli","plate.id"), fill = T, all = T)
   longdat <- merge(longdat, value_dat[!is.na(Row)], by = c("Row","coli","plate.id"), fill = T, all = T)
   
-  # assign the acnm
+  # assign the acsn and acnm
+  longdat[, acsn := cyto_type]
   acnm <- acsn_map[acsn == cyto_type, acnm]
   if (length(acnm) == 0) {
     warning(paste0(cyto_type," not found in acsn_map. Setting acnm to ",cyto_type," as placeholder.\n"))
