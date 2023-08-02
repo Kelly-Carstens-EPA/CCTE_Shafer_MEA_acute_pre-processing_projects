@@ -1,6 +1,6 @@
 getAssayData <- function(cyto_type, sourcefile) {
   
-  cat(cyto_type, "\n")
+  # cat(cyto_type, "\n")
   
   assay_dat_dt <- findTabData(sourcefile, cyto_type)
   
@@ -25,7 +25,7 @@ getAssayData <- function(cyto_type, sourcefile) {
   
   # check that there are 3 unique plate id
   plates <- unique(longdat$plate.id) # this is important for correct merging of trt, conc, rvals
-  cat(c(plates),"\n")
+  # cat(c(plates),"\n")
   if (length(plates) != 3) stop(paste0("Something is off with plates in ",basename(sourcefile), " ",cyto_type))
   
   return(longdat)

@@ -32,6 +32,8 @@ print(sessionInfo())
 ## Project variables definitions
 
 ```{r}
+# Note that paths can be written relative to the .Rproj
+
 project_name <- "TSCA2019" # e.g. "name2020"
 
 spidmap_file <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/EPA_25092_EPA-Shafer_339_20190722.xlsx"
@@ -39,11 +41,9 @@ spid_sheet <- 1 # sheet name or number in spidmap_file
 
 project.input.dir <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response"
 scripts.dir <- "mea-acute-neural-stats-to-mc0-scripts"
-root.output.dir <- ""
 assay_component_map_filename <- "neural_stats_acsn_to_tcpl_acnm_map.xlsx"
 
-project.output.dir <- file.path(root.output.dir, project_name)
-project.output.dir <- sub('^/','',project.output.dir) # remove leading /, if present
+project.output.dir <- file.path(project_name) # where the "output" folder should be created
 
 select.neural.stats.files <- F # select new neural stats files, or use the files in the most recent neural_stats_files_log?
 select.calculations.files <- F # select new calculations files, or use the files in the most recent calculations_files_log?
@@ -71,14 +71,6 @@ Save items to be kept throughout all steps
 ```{r}
 keep.items <- c(ls(),'keep.items')
 ```
-
-If the scripts.dir is managed with version control, check that there are no local or uncommitted modifications, and then enter the following information to record the branch and most recent commit to the pre-processing scripts repository: 
-
-* **branch**: <enter branch>
-* **commit date**: <enter commit date>
-* **commit message**: <enter commit message>
-* **commit SHA**: <enter commit SHA>
-* **link to scripts**: <GitHub link followed by commit SHA>
 
 # Step 0
 
@@ -401,7 +393,7 @@ stopifnot(nrow(dat.neural.stats[, .(num_base_files = length(unique(neural_stats_
 
 
 
-## Setting wllq based on run type
+## Setting wllq based on recording information
 
 Update the wllq_by_recording based on:
 
@@ -1186,8 +1178,6 @@ dat[treatment == 0, .N, by = .(treatment, culture_folder, rowi, srcf)][order(cul
 
 ```
 
-I asked Theresa about this well 8/1/2023. She said that she would look into it to determine if the well was supposed to have wllq == 0 and what the treatment actually was. 
-
 * Extrapolate the treatment labels for the non-cytotoxicity parameters
 
 ```{r}
@@ -1404,7 +1394,7 @@ setnames(spidmap, old = 'EPA_SAMPLE_ID', new = 'spid')
 # Talk to lab technicians is not sure
 
 # Example:
-unique(dat$treatment)
+head(unique(dat$treatment))
 # looks like the treatment labels are the same as EPA SAMPLE ID, minus the prefix 'EPAPLT0'.
 # so we don't really need the spids in this spidmap, but will merge for formality/to check for missing samples, and to get the concentrations
 spidmap[, treatment := sub('EPAPLT0','',spid)]
@@ -1417,12 +1407,29 @@ names(spidmap)
 unique(spidmap$TARGET_CONCENTRATION) # all 20
 # target concentration is not the same as the actual concentration
 # get the actual concentrations from invitrodb
+```
+
+Since this spidmap does not contain the stock concentrations, get a table including spid's and actual concentrations tested from invitrodb
+
+`eval = FALSE` because only need to run once
+```{r eval = FALSE}
 library(RMySQL)
-con <- dbConnect(drv = MySQL(), user = Sys.getenv('INVITRODB_USER_RO'), Sys.getenv('INVITRODB_PASS_RO'),Sys.getenv('INVITRODB_HOST'),db = 'invitrodb')
+con <- dbConnect(drv = MySQL(), user = Sys.getenv('INVITRODB_USER_RO'), 
+                 pass = Sys.getenv('INVITRODB_PASS_RO'),
+                 host = Sys.getenv('INVITRODB_HOST'),
+                 db = 'invitrodb') # user, pass, etc saved under environmental variables (.Renviron). Modify as needed
 all.samples.tb <- dbGetQuery(con, 'SELECT * FROM sample')
 setDT(all.samples.tb)
 dbDisconnect(con)
-spidmap <- merge(spidmap, all.samples.tb, by = 'spid', all.x = T) # stkc = stock concentration
+TSCA2019.samples.tb <- all.samples.tb[spid %in% spidmap$spid]
+write.csv(TSCA2019.samples.tb , file = file.path(project.output.dir,'TSCA2019_sample_tb_from_invitrodb_2023-08-02.csv'))
+```
+
+Merge information from `TSCA2019_sample_tb_from_invitrodb_2023-08-02.csv` with the spidmap
+
+```{r}
+TSCA2019.samples.tb <- read.csv(file.path(project.output.dir,'TSCA2019_sample_tb_from_invitrodb_2023-08-02.csv'))
+spidmap <- merge(spidmap, TSCA2019.samples.tb, by = 'spid', all.x = T) # stkc = stock concentration
 setnames(spidmap, old = 'stkc', new = 'stock_conc')
 spidmap[is.na(stock_conc)] # check no NAs for rows that contain spids
 
@@ -1452,15 +1459,18 @@ setdiff(dat$treatment, spidmap$treatment)
 setdiff(dat$treatment, spidmap$treatment)
 # "0"          "1:250 LDH"  "1:2500 LDH" "DMSO"       "Lysis"      "Media"      "PICRO"      "TTX"        "1/2 Lysis"  
 # all of these are controls (except for the 0), so this is
-
-# Check that all treatments in the spidmap are present in the dat
+```
+Check that all treatments in the spidmap are present in the dat
+```{r}
 setdiff(spidmap$treatment, dat$treatment)
 # Should be empty IF all treatments in the spidmap are expected to have been tested in this assay
+```
 
-# TSCA2019 - 
-# Several are not present...
-# probably because we did a single point screen first, so many were not screened in multi-conc, so this is not surprising
+TSCA2019 - 
+Several are not present...
+probably because we did a single point screen first, so many were not screened in multi-conc, so this is not surprising
 
+```{r}
 # Check if every treatment name maps to 1 unique sample ID in spidmap
 spidmap[treatment %in% unique(dat$treatment), .N, by = .(treatment)][N > 1]
 
@@ -1487,7 +1497,7 @@ dat[grepl("Lysis",treatment), spid := "Tritonx100"]
 dat[grepl('LDH',treatment), spid := treatment] # will remove these wells regardless
 
 # Final check that a spid assigned for every data row
-# stopifnot(nrow(dat[is.na(spid)]) == 0)
+stopifnot(nrow(dat[is.na(spid)]) == 0)
 
 ```
 
@@ -1658,45 +1668,26 @@ Check for any cases where the conc from the srcf and my_anticipated_conc disagre
 ```{r}
 # Confirm that the dilution.tb produces decent agreement with the conc_srcf most of the time
 dat[, conc_log10_diff_abs := abs(conc_log10 - my_anticipated_conc_log10)]
-dat[, .N, by = .(concs_decent_agreement = conc_log10_diff_abs < 0.005)]
-#    concs_decent_agreement      N
-# 1:                     NA  35265
-# 2:                   TRUE 204536
-# 3:                  FALSE    414
+dat[wllt == 't', .N, by = .(concs_decent_agreement = conc_log10_diff_abs < 0.005)]
 # good, most conc's agree
-# that treatment == 0 conc has NA conc though
+```
 
-# Check for any cases where the conc from the srcf and my_anticipated_conc disagree by more than +/-0.005 log10-uM
+ Check for any cases where the conc from the srcf and my_anticipated_conc disagree by more than +/-0.005 log10-uM
+```{r}
 dat[conc_log10_diff_abs >= 0.005, .N, 
     by = .(treatment, stock_conc, cndx, conc, my_anticipated_conc, conc_log10_diff_abs, culture_folder)][order(treatment, conc)]
-
-
-# Possible reasons for disagreement between conc and my anticipated conc:
-# - conc's in source file were not corrected to stock_conc
-# - conc's in source file were "corrected" to the wrong stock_conc
-# - stock_conc in spidmap_files are off (so my_anticipated_conc is off). This is unlikely.
-# - treatment was intentionally tested at a different series than what is defined in dilution.tb (so my_anticipated_conc is off)
-# - something else is off with the conc-data alignment
-
-# Take appropriate action for each of the cases above
 ```
 
-Investigate the case with 199B10 (if Calculations file has not been updated)
+Possible reasons for disagreement between conc and my anticipated conc:
+
+- conc's in source file were not corrected to stock_conc
+- conc's in source file were "corrected" to the wrong stock_conc
+- stock_conc in spidmap_files are off (so my_anticipated_conc is off). This is unlikely.
+- treatment was intentionally tested at a different series than what is defined in dilution.tb (so my_anticipated_conc is off)
+- something else is off with the conc-data alignment
 
 
-```{r}
-dat[treatment == '199B10' & conc_log10_diff_abs >= 0.005, .N,
-    by = 
-      .(treatment, stock_conc, cndx, conc, my_anticipated_conc, conc_log10_diff_abs, culture_folder, plate.id, treatment_tested_only_6_wells_on_plate)]
-#    treatment stock_conc cndx conc my_anticipated_conc conc_log10_diff_abs       culture_folder  plate.id treatment_tested_only_6_wells_on_plate  N
-# 1:    199B10    19.9995    4    3            0.999975           0.4771321 20210714 Culture G35 MW75-9116                                  FALSE 46
-# 2:    199B10    19.9995    5   10            2.999925           0.5228896 20210714 Culture G35 MW75-9116                                  FALSE 46
-# 3:    199B10    19.9995    6   30            9.999750           0.4771321 20210714 Culture G35 MW75-9116                                  FALSE 46
-
-dat[treatment == '199B10' & plate.id == 'MW75-9116', .N, by = .(cndx, conc, my_anticipated_conc, coli)]
-```
-
-Oh... see how there are only 6 concentrations tested, because column 5 is missing. This is again because of the treatment == 0 possible typo. Will confirm with Theresa what the treatment/conc should be.
+Take appropriate action for each of the cases above
 
 See cases from G16
 
@@ -1714,6 +1705,8 @@ dat[conc_log10_diff_abs >= 0.005 & treatment != '199B10', .N,
 
 Reviewing the lab notebook - there was a dosing error for this plate. Concentrations were intentionally adjusted in the Calculations file to reflect reality.
 
+Updated my_anticipated_conc for G16 and recheck:
+
 ```{r}
 # Update dilution factors and re-check
 # For cndx 7, 195.5 uL of Media was added to the Dosing plate instead of 295.5 uL
@@ -1729,10 +1722,6 @@ dat[, conc_log10_diff_abs := abs(conc_log10 - my_anticipated_conc_log10)]
 # Check for any cases where the conc from the srcf and my_anticipated_conc disagree by more than +/-0.005 log10-uM
 dat[conc_log10_diff_abs >= 0.005, .N, 
     by = .(treatment, stock_conc, cndx, conc, my_anticipated_conc, conc_log10_diff_abs, culture_folder)][order(treatment, conc)]
-#    treatment stock_conc cndx conc my_anticipated_conc conc_log10_diff_abs       culture_folder  N
-# 1:    199B10    19.9995    4    3            0.999975           0.4771321 20210714 Culture G35 46
-# 2:    199B10    19.9995    5   10            2.999925           0.5228896 20210714 Culture G35 46
-# 3:    199B10    19.9995    6   30            9.999750           0.4771321 20210714 Culture G35 46
 ```
 
 
@@ -2213,9 +2202,12 @@ Replicating the analysis that was done for previous projects with TSCA2019 integ
 
 ```{r}
 # Load data sets that have already been pipelined
-# previously, 'dat4' was the final output for the run_me for each project,
+# With previous script configuration, 'dat4' was the final output for the run_me for each project,
 # except that WLLQ had NOT yet be set to 0 for outlier DMSO wells. 
-# That was done in the file lvl0_snapshots/mea_acute_lvl0_2020-07-29.RData
+# WLLQ was set to 0 for outlier DMSO wells in mea-acute-neural-stats-to-mc0-scripts/deprecated_create_lvl0_snapshots.R.
+# The output from that script saved 2 tables under lvl0_snapshots/:
+# lvl0_snapshots/dat4_2020-07-29.RData and 
+# lvl0_snapshots/mea_acute_lvl0_2020-07-29.RData
 all.prev.dat <- data.table()
 load('APCRA2019/output/APCRA2019_dat4_2020-07-27.RData') # getting most recent file
 dat4[, project := 'APCRA2019']
@@ -2230,10 +2222,6 @@ load('ToxCast2016/output/ToxCast2016_dat4_2020-07-27.RData') # getting most rece
 dat4[, project := 'ToxCast2016']
 all.prev.dat <- rbind(all.prev.dat, dat4)
 rm(dat4)
-
-# Confirm the MFR wllq update was not already applied to these files
-all.prev.dat[grepl('change MFR > 2',wllq_notes), .N, by = .(wllq)]
-# empty, good
 
 # Add the current data file to alldat
 dat[, project := project_name]
@@ -2386,15 +2374,9 @@ dat[any_plates_in_group_only_6_wells == TRUE & cndx == 1, num_replicates_expecte
 num.reps.tb <- dat[wllt == 't', 
                    .(num_replicates = length(unique(full_well_id))), by = .(treatment, spid, conc, cndx, culture_folder, num_replicates_expected)][num_replicates != 3]
 num.reps.tb[num_replicates!=num_replicates_expected]
-#    treatment          spid     conc cndx       culture_folder num_replicates_expected num_replicates
-# 1:    199B10 EPAPLT0199B10 29.99925    7 20210714 Culture G35                       3              2
-# 2:         0          <NA>       NA    1 20210714 Culture G35                       3              1
-
-# (this should be empty once we resolve the issue with treatment == 0)
-
 ```
 
-
+TSCA2019 - good, appears empty
 
 ## Data summaries 
 
@@ -2551,7 +2533,7 @@ Date prepared: ',as.character.Date(Sys.Date()),
 * Check that none of the data has been pipelined before (i.e., merge with current level 0 data and check for duplicates by apid, rowi, coli, and acnm)')
 cat(acn.dat.description)
 save(dat, acn.dat.description, 
-     file = file.path(root.output.dir, project_name, "output", paste0(project_name,"_MEA_Acute_for_tcpl_lvl0.RData")))
+     file = file.path(project.output.dir, "output", paste0(project_name,"_MEA_Acute_for_tcpl_lvl0.RData")))
 ```
 
 You made it!
