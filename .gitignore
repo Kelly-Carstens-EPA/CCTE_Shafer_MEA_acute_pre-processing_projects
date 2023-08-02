@@ -1,7 +1,98 @@
-##############################
-# Individual files to ignore #
-##############################
+# -------------------------------------------------- # 
+# Individual files to ignore 
+# -------------------------------------------------- # 
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+.Rproj.user/
+
+# -------------------------------------------------- # 
+# Ignoring copies of .RData that do not correspond to the final version used at each level
+# only applies to historical data
+# current methods use version controls rather than saving a new draft data file every date a new one is created
+# these files could probably be deleted.
+# These files were identifed with the script
+# general_checking_functions/programmatically_identify_most_recent_output_rdata_files_2023-01-10.R,
+# then this list was modified 8/2/2023
+# -------------------------------------------------- # 
+APCRA2019/output/APCRA2019_dat1_2020-06-04.RData
+APCRA2019/output/APCRA2019_dat1_2020-06-15.RData
+APCRA2019/output/APCRA2019_dat1_2020-06-19.RData
+APCRA2019/output/APCRA2019_dat1_2020-07-21.RData
+APCRA2019/output/APCRA2019_dat2_2020-06-04.RData
+APCRA2019/output/APCRA2019_dat2_2020-06-15.RData
+APCRA2019/output/APCRA2019_dat2_2020-06-19.RData
+APCRA2019/output/APCRA2019_dat2_2020-07-21.RData
+APCRA2019/output/APCRA2019_dat3_2020-06-04.RData
+APCRA2019/output/APCRA2019_dat3_2020-06-10.RData
+APCRA2019/output/APCRA2019_dat3_2020-06-15.RData
+APCRA2019/output/APCRA2019_dat3_2020-06-19.RData
+APCRA2019/output/APCRA2019_dat3_2020-07-21.RData
+APCRA2019/output/APCRA2019_dat4_2020-06-06.RData
+APCRA2019/output/APCRA2019_dat4_2020-06-10.RData
+APCRA2019/output/APCRA2019_dat4_2020-06-15.RData
+APCRA2019/output/APCRA2019_dat4_2020-06-19.RData
+APCRA2019/output/APCRA2019_dat4_2020-06-21.RData
+APCRA2019/output/APCRA2019_dat4_2020-07-21.RData
+BaselineDeclineAnalysis/output/BaselineDeclineAnalysis_dat1_2022-02-11.RData
+DNT2019/output/DNT2019_dat1_2020-06-01.RData
+DNT2019/output/DNT2019_dat1_2020-06-03.RData
+DNT2019/output/DNT2019_dat1_2020-06-04.RData
+DNT2019/output/DNT2019_dat1_2020-06-18.RData
+DNT2019/output/DNT2019_dat1_2020-07-22.RData
+DNT2019/output/DNT2019_dat2_2020-06-01.RData
+DNT2019/output/DNT2019_dat2_2020-06-03.RData
+DNT2019/output/DNT2019_dat2_2020-06-04.RData
+DNT2019/output/DNT2019_dat2_2020-06-18.RData
+DNT2019/output/DNT2019_dat2_2020-07-22.RData
+DNT2019/output/DNT2019_dat3_2020-06-03.RData
+DNT2019/output/DNT2019_dat3_2020-06-04.RData
+DNT2019/output/DNT2019_dat3_2020-06-10.RData
+DNT2019/output/DNT2019_dat3_2020-06-18.RData
+DNT2019/output/DNT2019_dat3_2020-07-22.RData
+DNT2019/output/DNT2019_dat4_2020-06-06.RData
+DNT2019/output/DNT2019_dat4_2020-06-10.RData
+DNT2019/output/DNT2019_dat4_2020-06-18.RData
+DNT2019/output/DNT2019_dat4_2020-06-19.RData
+DNT2019/output/DNT2019_dat4_2020-06-21.RData
+DNT2019/output/DNT2019_dat4_2020-07-22.RData
+DNTFalseNegatives/output/DNTFalseNegatives_dat1_2022-03-21.RData
+DNTFalseNegatives/output/DNTFalseNegatives_dat2_2022-03-21.RData
+DNTFalseNegatives/output/DNTFalseNegatives_dat3_2022-03-24.RData
+DNTFalseNegatives/output/DNTFalseNegatives_dat4_2022-04-14.RData
+DNTFalseNegatives/output/DNTFalseNegatives_dat4_2022-04-18.RData
+GF2019/output/GF2019_dat1_2020-06-21.RData
+GF2019/output/GF2019_dat1_2020-07-16.RData
+GF2019/output/GF2019_dat1_2020-07-20.RData
+GF2019/output/GF2019_dat1_2020-07-21.RData
+GF2019/output/GF2019_dat2_2020-06-21.RData
+GF2019/output/GF2019_dat2_2020-07-16.RData
+GF2019/output/GF2019_dat2_2020-07-20.RData
+GF2019/output/GF2019_dat2_2020-07-21.RData
+GF2019/output/GF2019_dat3_2020-06-22.RData
+GF2019/output/GF2019_dat3_2020-07-16.RData
+GF2019/output/GF2019_dat3_2020-07-20.RData
+GF2019/output/GF2019_dat3_2020-07-21.RData
+GF2019/output/GF2019_dat4_2020-06-22.RData
+GF2019/output/GF2019_dat4_2020-07-16.RData
+GF2019/output/GF2019_dat4_2020-07-20.RData
+GF2019/output/GF2019_dat4_2020-07-21.RData
+Impedance2023/.Rhistory
+ToxCast2016/output/ToxCast2016_dat1_2020-06-06.RData
+ToxCast2016/output/ToxCast2016_dat1_2020-06-18.RData
+ToxCast2016/output/ToxCast2016_dat1_2020-07-23.RData
+ToxCast2016/output/ToxCast2016_dat2_2020-06-06.RData
+ToxCast2016/output/ToxCast2016_dat2_2020-06-08.RData
+ToxCast2016/output/ToxCast2016_dat2_2020-06-18.RData
+ToxCast2016/output/ToxCast2016_dat2_2020-07-23.RData
+ToxCast2016/output/ToxCast2016_dat3_2020-06-08.RData
+ToxCast2016/output/ToxCast2016_dat3_2020-06-10.RData
+ToxCast2016/output/ToxCast2016_dat3_2020-06-19.RData
+ToxCast2016/output/ToxCast2016_dat3_2020-07-23.RData
+ToxCast2016/output/ToxCast2016_dat4_2020-06-08.RData
+ToxCast2016/output/ToxCast2016_dat4_2020-06-10.RData
+ToxCast2016/output/ToxCast2016_dat4_2020-06-19.RData
+ToxCast2016/output/ToxCast2016_dat4_2020-06-21.RData
+ToxCast2016/output/ToxCast2016_dat4_2020-07-23.RData
+deprecated/single_point_screen/TSCA2019/output/TSCA2019_dat1_2020-11-16.RData
