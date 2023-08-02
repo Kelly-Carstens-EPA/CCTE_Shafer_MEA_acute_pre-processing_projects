@@ -1,7 +1,7 @@
 TSCA2019 files used for MEA acute pre-processing for TCPL
 File types: neural_stats
 Created with the script gather_files-functions.R
-Date ran: 2023-05-11 13:22:21
+Date ran: 2023-08-01 15:39:39
 Every line ending in '.csv' or '.xlsx' or '.xls' will be read as an input file
 
 Collected 218 files from 37 directories.

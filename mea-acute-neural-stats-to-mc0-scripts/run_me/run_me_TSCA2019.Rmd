@@ -4,7 +4,7 @@ output:
   html_document:
     toc: true
     toc_float: true
-    number_sections: true
+    number_sections: false
     code_folding: hide
     df_print: paged
 date: "August 4, 2023"
@@ -40,7 +40,7 @@ spid_sheet <- 1 # sheet name or number in spidmap_file
 project.input.dir <- "L:/Lab/NHEERL_MEA/Project TSCA 2019/Acute TSCA Conc Response"
 scripts.dir <- "mea-acute-neural-stats-to-mc0-scripts"
 root.output.dir <- ""
-assay_component_map_filename <- file.path("neural_stats_acsn_to_tcpl_acnm_map.xlsx")
+assay_component_map_filename <- "neural_stats_acsn_to_tcpl_acnm_map.xlsx"
 
 project.output.dir <- file.path(root.output.dir, project_name)
 project.output.dir <- sub('^/','',project.output.dir) # remove leading /, if present
@@ -67,12 +67,18 @@ acsn_map <- as.data.table(read.xlsx(assay_component_map_filename))
 rm(assay_component_map_filename)
 ```
 
-
 Save items to be kept throughout all steps
 ```{r}
 keep.items <- c(ls(),'keep.items')
 ```
 
+If the scripts.dir is managed with version control, check that there are no local or uncommitted modifications, and then enter the following information to record the branch and most recent commit to the pre-processing scripts repository: 
+
+* **branch**: <enter branch>
+* **commit date**: <enter commit date>
+* **commit message**: <enter commit message>
+* **commit SHA**: <enter commit SHA>
+* **link to scripts**: <GitHub link followed by commit SHA>
 
 # Step 0
 
@@ -104,6 +110,8 @@ if (length(readmes) > 0) {
 ```
 
 5/11/23: Seline has already updated the formula in the Calculations file such that the corrected optical density values for plate 1 are corrected to the blanks from plate 2. No further updates needed.
+
+(If there was an important well quality note, enter it in one of the well_quality_table's, to be merged later on)
 
 Check for any other .txt files that look relevant
 ```{r}
@@ -1427,7 +1435,7 @@ setnames(spidmap, old = 'stkc_unit', new = 'stock_conc_unit')
 
 
 # View the spidmap, determine if any additional cleaning is needed
-View(spidmap)
+spidmap
 
 # Check that all test treatments in dat are covered by the spidmap
 # (vehicle controls won't have spid's, and that is okay)
@@ -1479,7 +1487,7 @@ dat[grepl("Lysis",treatment), spid := "Tritonx100"]
 dat[grepl('LDH',treatment), spid := treatment] # will remove these wells regardless
 
 # Final check that a spid assigned for every data row
-stopifnot(nrow(dat[is.na(spid)]) == 0)
+# stopifnot(nrow(dat[is.na(spid)]) == 0)
 
 ```
 
@@ -1517,7 +1525,7 @@ dat[spid == "Tritonx100" & acnm == "CCTE_Shafer_MEA_acute_AB", wllt := "p"] # po
 
 # treated compounds
 ignore.ldh.treatments <- c('Lysis','1/2 Lysis','1:250 LDH','1:2500 LDH')
-View(dat[is.na(wllt) & !(grepl('LDH',acnm) & treatment %in% ignore.ldh.treatments), .N, by = .(treatment)])
+dat[is.na(wllt) & !(grepl('LDH',acnm) & treatment %in% ignore.ldh.treatments), .N, by = .(treatment)]
 # yep, all of these look like they are supposed to be test wells
 dat[is.na(wllt) & !(grepl('LDH',acnm) & treatment %in% ignore.ldh.treatments), wllt := 't']
 
@@ -1983,7 +1991,7 @@ dat[, wllq_ref := sub('^; ','',wllq_ref)]
 Confirm that the wllq and notes appear as expected
 
 ```{r}
-View(dat[, .N, by = .(wllq, wllq_notes, wllq_ref)][order(wllq)])
+dat[, .N, by = .(wllq, wllq_notes, wllq_ref)][order(wllq)]
 ```
 
 ### Note NA and infinite rvals
@@ -1991,23 +1999,23 @@ View(dat[, .N, by = .(wllq, wllq_notes, wllq_ref)][order(wllq)])
 ```{r}
 dat[is.na(rval), .N, by = .(wllq, assay)]
 #    wllq assay    N
-# 1:    0   ACN 6759
-# 2:    1   ACN 5271
+# 1:    0   ACN 5461
+# 2:    1   ACN 6569
 
 # rval is usually NA for the ACN assay where either the baseline or treated recording value is NA
 # or if both the baseline and treated recording value are 0 (hence 0/0)
 # for a given well + parameter
 
 # Previously, I set the wllq to 0 wherever the rval is NA
-# HOwever, there isn't necessarily anything wrong with these wells
-# So, perhaps we can leave wllq as-is, knowing that TCPL will ignore wells with NA rval regardless.
-
+# However, there isn't necessarily anything wrong with these wells
+# So, perhaps we can leave wllq as-is, knowing that TCPL will ignore data points with NA rval regardless.
+# (I think NA rvals are set to wllq == 0 at level 2 of TCPL)
 
 # Inf
 dat[is.infinite(rval), .N, by = .(wllq, assay)]
 #    wllq assay   N
-# 1:    0   ACN 122
-# 2:    1   ACN 170
+# 1:    0   ACN 105
+# 2:    1   ACN 187
 
 #this occurs when the baseline recording is 0 (so the percent change rval is x/0)
 dat[is.infinite(rval), .N, by = .(activity_value.b == 0)]
@@ -2038,10 +2046,10 @@ Thus, 2 times the value in "half lysis" wells are often used instead as the posi
 What I've done in the past:
 
 * For plates that have at least one 1/2 Lysis well with wllq=1,
-* multiply the 1/2 Lysis rval's by 2 and set wllt = "p"
-* set wllt for Full Lysis wells to "x" (We don't want these to be part of the "p" wells on these plates)
+    * multiply the 1/2 Lysis rval's by 2 and set wllt = "p"
+    * set wllt for Full Lysis wells to "x" (We don't want these to be part of the "p" wells on these plates)
 * For plates that do not have at least one 1/2 Lysis well with wllq=1, 
-* Label full Lysis wells as wllt = "p"
+    * Label full Lysis wells as wllt = "p"
 
 HOWEVER, based on more recent conversations with Kathleen, it may be better to consider each plate individually to determine whether the Full or Half lysis wells should be used. SO, we may want to have some conversations about how to determine which wells should be used as the positive controls for the LDH assay, perhaps based on some standardized cutoff.
 
@@ -2165,57 +2173,49 @@ So cool, no other plates are missing any of the main parameters that were releas
 
 ## Note the vehicle controls per plate
 
-Check if any plates have multiple vehicle controls
+Check if any plates have multiple vehicle controls. If there are multiple vehicle controls used on a given plate (or apid), then we might want to reconsider the apid definition for that apid so that treatments are normalized to wells with the same solvent. However, in the small data sets analyzed so far, we have not found a notable difference in activity between DMSO, Water, and Ethanol wells in the NFA so far, so the vehicle solvent type may not be too critical.
 
 ```{r}
 # Check if any plates have multiple vehicle controls
 # (if multiple are present on a given plate, consider the normalization method and/or apid definition for the given plate)
-dat[, num_vehicle_control_types_per_plate := length(unique(treatment[wllt == 'n'])), by = .(apid)]
-dat[num_vehicle_control_types_per_plate > 1]
+dat[, num_vehicle_control_types_per_plate := length(unique(treatment[wllt == 'n'])), by = .(full_plate_id)]
+stopifnot(nrow(dat[num_vehicle_control_types_per_plate > 1]) == 0)
 
 # View the vehicle controls on these plates
-# dat[num_vehicle_control_types_per_plate > 1 & wllt == 'n', .N, by = .(apid, treatment, spid)]
+# dat[num_vehicle_control_types_per_plate > 1 & wllt == 'n', .N, by = .(full_plate_id, treatment, spid)]
 ```
 
 
-# Data usability checks - controls MFR within +/- 2 SD of mean
+## Data usability checks - percent change in controls MFR within +/- 2 SD of mean
 
-## SAVing copy of dat
-
-```{r}
-# Save the file
-setkey(dat, NULL) # remove keys to make the file smaller
-# Optional character description of the file, modify as needed
-acn.dat.description <- paste0('incomplete')
-cat(acn.dat.description)
-save(dat, acn.dat.description, 
-     file = file.path(project_name, "output", paste0(project_name,"_dat.RData")))
-```
-
+In previous project, a final well quality check was performed on the DMSO control wells to remove outliers in the MFR % change values (as opposed to the automated wllq updates based on the activity level in the baseline recording only).
 
 What has been done for the all projects that have been pipelined to-date ('APCRA2019','DNT2019','GF2019','ToxCast2016'):
 
-* Calculate the mean and SD where wllt == 'n' for ALL MEA acute data pre-processed to date 
+* Calculate the mean and SD where wllt == 'n' for ALL MEA acute data pre-processed to date
 * Set wllq to 0 for any wells where the CCTE_Shafer_MEA_acute_firing_rate_mean is less than 2 SDs below the mean or more then 2 SDs above the mean for all parameters
 
-I think that this approach was developed mostly to justify removing several low-activity control wells from the APCRA2019/DNT2019 projects.
+I think that this approach was developed mostly to justify removing several low-activity control wells from the APCRA2019/DNT2019 projects. The idea was that as new data is added, the mean and SD of wllt == 'n' wells would be recalculated and the well quality would be reset for all existing MEA Acute data. 
 
 HOWEVER, this approach may not be preferable going forward because:
 
 * If we have to update the mean and SD based on all wllt == 'n' wells for ALL MEA acute data every time a new project is added, then the well quality for some wells that have already been pipelined might change.
-* I'm not sure that it makes sense to set the wllq to 0 for the LDH and AB parameters based on the MFR.
+* I'm not sure that it makes sense to set the wllq to 0 for the LDH and AB parameters based on the MFR, particularly where the MFR is 2SD above the mean.
 
-Alternatively, maybe we could use the data quality threshold from the NFA (exclude plates where plate-wise median of controls on DIV 12 is < 10 spikes per min or < 2 active electrodes).
+Some alternative options going forward:
+
+* We could use the data quality threshold from the NFA (exclude plates where plate-wise median of controls on DIV 12 is < 10 spikes per min or < 2 active electrodes).
+* We could set the standardized cutoffs based on only the MEA Acute data that has already been pipelined, and not update the cutoffs as more data is added.
 
 
-Replicating what was done for previous projects with TSCA2019 integrated:
+Replicating the analysis that was done for previous projects with TSCA2019 integrated (previously implemented in `remove_dmso_outliers()`):
 
 
 ```{r}
 # Load data sets that have already been pipelined
-# previously, 'dat4' was the final output for the run_me for each project
-# ** WLLQ was NOT set to 0 based on the below check in these files
-# that was done in the file lvl0_snapshots/mea_acute_lvl0_2020-07-29.RData
+# previously, 'dat4' was the final output for the run_me for each project,
+# except that WLLQ had NOT yet be set to 0 for outlier DMSO wells. 
+# That was done in the file lvl0_snapshots/mea_acute_lvl0_2020-07-29.RData
 all.prev.dat <- data.table()
 load('APCRA2019/output/APCRA2019_dat4_2020-07-27.RData') # getting most recent file
 dat4[, project := 'APCRA2019']
@@ -2249,17 +2249,17 @@ alldat[, wlltn_upper_bound := wlltn_mean + 2 * wlltn_SD]
 alldat[acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean" & wllt == 'n' & wllq == 1 & rval < wlltn_lower_bound,
        .N, by = .(project, wlltn_mean, wlltn_SD)]
 #      project wlltn_mean wlltn_SD N
-# 1: APCRA2019  -27.00949 32.33119 6
-# 2:   DNT2019  -27.00949 32.33119 8
-# 3:  TSCA2019  -27.00949 32.33119 2
+# 1: APCRA2019  -27.95468 32.47011 4
+# 2:   DNT2019  -27.95468 32.47011 8
+# 3:  TSCA2019  -27.95468 32.47011 4
 # only a few
 
 # How many control wells that currently have wllq == 1  would have wllq set to 0 because MFR is too high?
 alldat[acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean" & wllt == 'n' & wllq == 1 & rval > wlltn_upper_bound,
        .N, by = .(project, wlltn_mean, wlltn_SD)]
 #      project wlltn_mean wlltn_SD  N
-# 1: APCRA2019  -27.00949 32.33119  4
-# 2:  TSCA2019  -27.00949 32.33119 19
+# 1: APCRA2019  -27.95468 32.47011  4
+# 2:  TSCA2019  -27.95468 32.47011 19
 
 # Thresholds without TSCA2019
 alldat[, wlltn_mean_sans_tsca2019 := mean(rval[wllq == 1 & wllt == 'n' & project != 'TSCA2019'], na.rm = T), by = .(acnm)]
@@ -2288,79 +2288,12 @@ ggplot(plotdat, aes(x = experiment.date, y = rval))+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5))+
   ggtitle('Percent change in Mean Firing Rate in wllt = n wells for all MEA Acute data pre-processed to-date\nOnly points with wllq = 1 shown',
           subtitle = c(paste0('solid line = mean; dashed lines = mean +/- 2 SD',
-                              'Black = cutoffs without TSCA2019; orange = cutoffs with TSCA2019')))
+                              '\nBlack = cutoffs without TSCA2019; orange = cutoffs with TSCA2019')))
 ```
 
-So, it looks like the cutoffs with TSCA2019 (orange) are less stringent than those without TSCA2019 (black). So if we used this approach, then the wllq for some old data should be updated to wllq := 1
+So, it looks like the cutoffs with TSCA2019 (orange) are less stringent than those without TSCA2019 (black). So if we used this approach, then the wllq for some previously pipelined data would be updated to wllq := 1
 
-
-```{r}
-# Compare these wllq settings with previous data ---------------
-
-# Update the wllq in alldat table
-alldat[, control_mfr_too_low := any(acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean" & wllt == 'n' & rval < wlltn_lower_bound), 
-       by = .(experiment.date, plate.id, rowi, coli)]
-alldat[, control_mfr_too_high := any(acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean" & wllt == 'n' & rval > wlltn_upper_bound), 
-       by = .(experiment.date, plate.id, rowi, coli)]
-alldat[control_mfr_too_low == TRUE, `:=`(wllq = 0,
-                                         wllq_notes = paste0('DMSO % change MFR > 2*SD from the mean; ',wllq_notes))]
-alldat[control_mfr_too_high == TRUE, `:=`(wllq = 0,
-                                          wllq_notes = paste0('DMSO % change MFR > 2*SD from the mean; ',wllq_notes))]
-
-
-# Load previous mc0
-load('lvl0_snapshots/mea_acute_lvl0_2020-07-29.RData')
-# [1] "spid" "apid" "rowi" "coli" "conc" "acnm" "wllt" "wllq" "srcf" "rval"
-# wllq ntoes, etc not included
-nrow(mea_acute_lvl0) == nrow(alldat[project != 'TSCA2019'])# TRUE
-mea_acute_lvl0[, .N, by = .(wllq)]
-#    wllq      N
-# 1:    1 526522
-# 2:    0 113468
-alldat[project != 'TSCA2019', .N, by = .(wllq)]
-#    wllq      N
-# 1:    1 527242
-# 2:    0 112748
-113468 - 112748 # 720
-```
-
-So 720 data rows (corresponding to all parameters) have wllq == 0 in the current mc0 that would be updated to wllq == 1 if we used this approach.
-
-```{r}
-
-rm(alldat, all.dat.prev, comp.tb)
-
-
-# If decide to update wllq based on these threshold for the TSCA2019 dat specifically
-all_controls_mfr_lower_bound <- alldat[acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean", unique(wlltn_lower_bound)]
-all_controls_mfr_upper_bound <- alldat[acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean", unique(wlltn_upper_bound)]
-dat[acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean", wlltn_lower_bound := all_controls_mfr_lower_bound]
-dat[acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean", wlltn_upper_bound := all_controls_mfr_upper_bound]
-dat[, control_mfr_too_low := any(acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean" & wllt == 'n' & rval < wlltn_lower_bound, na.rm = T), 
-    by = .(experiment.date, plate.id, rowi, coli)]
-dat[, control_mfr_too_high := any(acnm == "CCTE_Shafer_MEA_acute_firing_rate_mean" & wllt == 'n' & rval > wlltn_upper_bound, na.rm = T), 
-    by = .(experiment.date, plate.id, rowi, coli)]
-dat[control_mfr_too_low == TRUE, `:=`(wllq = 0,
-                                      wllq_notes = paste0('DMSO % change MFR > 2*SD from the mean; ',wllq_notes))]
-dat[control_mfr_too_high == TRUE, `:=`(wllq = 0,
-                                       wllq_notes = paste0('DMSO % change MFR > 2*SD from the mean; ',wllq_notes))]
-dat[wllq_notes %in% 'DMSO % change MFR > 2*SD from the mean; ', .(length(unique(full_well_id)))]
-
-
-# **fix this!!
-
-# why is this 25?
-# should only be 19 + 2
-
-dat[wllq_notes == 'DMSO % change MFR > 2*SD from the mean; ', .(length(unique(full_well_id))), by = .(rval < wlltn_lower_bound)]
-#     rval V1
-# 1:    NA 25
-# 2: FALSE 19
-# 3:  TRUE  2
-
-```
-
-
+Update the wllq for TSCA2019 and/or previous data sets as desired :)
 
 
 ## For repeated treatments, determine which culture(s) to keep
@@ -2398,8 +2331,6 @@ ggplot(plotdat,
   theme_bw()+
   ggtitle(paste0('Repeats of ',view_treatment))
 
-plotdat[grepl('fir',acnm) & culture.date == 20210811, .N, by = .(wllq, wllq_notes)]
-plotdat[is.na(wllq)]
 ```
 
 
@@ -2417,10 +2348,9 @@ usable.concs.tb[wllt == 't', .N, by = .(num_usable_concs)][order(num_usable_conc
 
 treatments.less.than.4.concs <- usable.concs.tb[wllt == 't' & num_usable_concs < 4, unique(treatment)]
 treatments.less.than.4.concs
-# [1] "200C12" "201A07" "201C05" "201C06" "201C07" "201D03" "201D06" "201E06" "201F01" "201F03" "201F05" "201G01" "201G02" "201H04" "0" 
 ```
 
-These treatments will not have any dose-response curves generated in TCPL. Confirm with lab technicians that these compounds were not retested elsewhere and that it is okay that we don't have any data for these.
+The above treatments (if any) with wllq == 1 data for less than 4 conc's will not have any dose-response curves generated in TCPL. Confirm with lab technicians that these compounds were not retested elsewhere and that it is okay that we don't have any data for these.
 
 What well quality issues lead to no data for these treatments?
 
@@ -2466,9 +2396,9 @@ num.reps.tb[num_replicates!=num_replicates_expected]
 
 
 
-# Data summaries 
+## Data summaries 
 
-## Counts 
+### Counts 
 
 **Number of cultures dates:**
 
@@ -2485,13 +2415,14 @@ dat[, length(unique(experiment.date))] # 37
 
 # Cultures that did not have 2 experiments
 dat[, .(num_experiments_per_culture = length(unique(experiment.date))), by = .(culture.date)][num_experiments_per_culture != 2]
-# yes, this checks out (doesn't look like I missed any data)
+
 ```
 
+TSCA2019 - yes, this checks out (doesn't look like I missed any data)
 
 **Range of culture dates:***
 ```{r}
-dat[, range(culture.date)]
+dat[, range(culture.date)] #  "20201104" "20210811"
 ```
 
 **Number of plates tested:**
@@ -2512,10 +2443,11 @@ dat[wllt == "t", length(unique(spid))]
 print(dat[, .N, by = "wllq"]) # note if wllq is NA anywhere
 ```
 
-**Number of unique assay componentss present:**
+**Number of unique assay components present:**
 
 ```{r}
 length(unique(dat$acnm))
+# (may vary depending on the equipment used, but should be at least 40)
 ```
 
 **Any plates don't have the expected number of wells for each component?** 
@@ -2542,7 +2474,9 @@ dat[wllq == 1, .(min = format(min(rval,na.rm=T),digits=2,scientific = F),
                  num_NA = sum(is.na(rval))), by = .(acnm_short)][order(acnm_short)]
 ```
 
-## Visualizations
+### Visualizations
+
+Below adapted from previous methods. Could use a major facelift. The goal is just to get eyes on the data visually.
 
 ```{r}
 # PLOTS to visually confirm results
@@ -2581,7 +2515,7 @@ dat[, wllt_conc := NULL]
 ```
 
 
-# Save final table -acn
+# Save final table
 
 ```{r}
 # Note that the cndx here is different than the cndx applied in tcpl
@@ -2602,11 +2536,11 @@ keep.columns <- c(
   
   # MEA-acute specific columns
   'activity_value.b', #  activity value from baseline recording in well
-  'activity_value.t' # activity value from treated recording in well
+  'activity_value.t', # activity value from treated recording in well
+  'low_ae_flag.b','high_mfr_flag.b','low_mfr_flag.b' # flags added by add_wllq_by_recording, based on baseline activity
 )
 dat <- dat[, .SD, .SDcols = keep.columns]
 
-# ** check for additional columns in dat to save
 
 # Save the file
 setkey(dat, NULL) # remove keys to make the file smaller
@@ -2614,7 +2548,6 @@ setkey(dat, NULL) # remove keys to make the file smaller
 acn.dat.description <- paste0(project_name,' MEA acn pre-processed data
 Date prepared: ',as.character.Date(Sys.Date()),
 '\nTo do before tcplWriteLvl0:
-* Exclude acnms that are for a specific DIV (see where grepl("_DIV",acnm))
 * Check that none of the data has been pipelined before (i.e., merge with current level 0 data and check for duplicates by apid, rowi, coli, and acnm)')
 cat(acn.dat.description)
 save(dat, acn.dat.description, 

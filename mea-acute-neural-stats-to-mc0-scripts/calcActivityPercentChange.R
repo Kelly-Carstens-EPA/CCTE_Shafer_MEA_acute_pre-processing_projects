@@ -39,10 +39,10 @@ calcActivityPercentChange <- function(dat.neural.stats) {
   
   # Merge the wllq_by_recording across baseline and treated
   dat.percent.change[, wllq_by_recording := pmin(wllq_by_recording.b, wllq_by_recording.t, na.rm = T)]
-  dat.percent.change[is.na(wllq_by_recording_notes.b), wllq_by_recording_notes.b := '']
-  dat.percent.change[is.na(wllq_by_recording_notes.t), wllq_by_recording_notes.t := '']
-  dat.percent.change[, wllq_notes_by_recording := paste0(wllq_by_recording_notes.t, wllq_by_recording_notes.b)]
-  dat.percent.change[!is.na(wllq_notes_by_recording), wllq_ref_by_recording := 'activity level cutoffs']
+  dat.percent.change[is.na(wllq_notes_by_recording.b), wllq_notes_by_recording.b := '']
+  dat.percent.change[is.na(wllq_notes_by_recording.t), wllq_notes_by_recording.t := '']
+  dat.percent.change[, wllq_notes_by_recording := paste0(wllq_notes_by_recording.t, wllq_notes_by_recording.b)]
+  dat.percent.change[!wllq_notes_by_recording %in% '', wllq_ref_by_recording := 'activity level cutoffs']
   
   # Subset to desired columns
   dat.percent.change <- dat.percent.change[, .(culture.date, culture_folder, group_char,group_int, experiment.date, apid, plate.id, rowi, coli, 

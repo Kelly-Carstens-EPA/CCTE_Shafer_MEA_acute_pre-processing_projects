@@ -1,60 +1,60 @@
-affected_assays,culture.date,plate.id,well,wllq_by_well,wllq_notes_by_well,wllq_ref_by_well
-"ACN,LDH,CTB",20210210,MW71-7011,A1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,A2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,A3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,A4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,A5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,A6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,A7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,A8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,B8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,C8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210210,MW71-7011,D8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
-"ACN,LDH,CTB",20210407,MW75-8105,A8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
-"ACN,LDH,CTB",20210407,MW75-8106,B8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
-"ACN,LDH,CTB",20210407,MW75-8107,C8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
-"ACN,LDH,CTB",20210407,MW75-8108,D8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
-"ACN,LDH,CTB",20210407,MW75-8109,E8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
-"ACN,LDH,CTB",20210407,MW75-8110,F8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
-LDH,20210414,MW75-8114,G3,0,"tipped plate, only had enough substrate of 2 control wells",lab notebook + investigations with Seline
-LDH,20210414,MW75-8114,H3,0,"tipped plate, only had enough substrate of 2 full lysis wells",lab notebook + investigations with Seline
-"ACN,LDH,CTB",,MW75-8004,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-8205,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-8206,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-8219,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9101,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9102,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9103,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9104,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9105,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9106,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9107,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9108,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9109,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9110,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW80-1501,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW78-6202,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW78-6203,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW78-6204,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
-"ACN,LDH,CTB",,MW75-9114,all,0,"plate has low controls quality, noted in lab notebook QC notes",lab notebook
+plate.id,affected_assays,culture.date,well,wllq_by_well,wllq_notes_by_well,wllq_ref_by_well
+MW71-7011,"ACN,LDH,AB",20210210,A1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,A2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,A3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,A4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,A5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,A6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,A7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,A8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,B8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,C8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D1,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D2,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D3,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D4,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D5,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D6,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D7,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW71-7011,"ACN,LDH,AB",20210210,D8,0,"dosing error, added 155uL dosing solution to columns 1-4 [instead of 55uL]",lab notebook
+MW75-8004,"ACN,LDH,AB",20210310,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-8105,"ACN,LDH,AB",20210407,A8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
+MW75-8105,"ACN,LDH,AB",20210407,B8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
+MW75-8105,"ACN,LDH,AB",20210407,C8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
+MW75-8105,"ACN,LDH,AB",20210407,D8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
+MW75-8105,"ACN,LDH,AB",20210407,E8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
+MW75-8105,"ACN,LDH,AB",20210407,F8,1,dosing error resulting in higher conc and higher DMSO (0.225%),lab notebook
+MW75-8114,LDH,20210414,G3,0,"tipped plate, only had enough substrate of 2 control wells",lab notebook + investigations with Seline
+MW75-8114,LDH,20210414,H3,0,"tipped plate, only had enough substrate of 2 full lysis wells",lab notebook + investigations with Seline
+MW75-8205,"ACN,LDH,AB",20210428,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-8206,"ACN,LDH,AB",20210428,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-8219,"ACN,LDH,AB",20210526,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9101,"ACN,LDH,AB",20210526,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9102,"ACN,LDH,AB",20210526,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9103,"ACN,LDH,AB",20210526,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9104,"ACN,LDH,AB",20210526,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9105,"ACN,LDH,AB",20210602,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9106,"ACN,LDH,AB",20210602,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9107,"ACN,LDH,AB",20210602,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9108,"ACN,LDH,AB",20210602,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9109,"ACN,LDH,AB",20210602,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9110,"ACN,LDH,AB",20210602,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW75-9114,"ACN,LDH,AB",20210714,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW78-6202,"ACN,LDH,AB",20210707,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW78-6203,"ACN,LDH,AB",20210707,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW78-6204,"ACN,LDH,AB",20210707,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
+MW80-1501,"ACN,LDH,AB",20210630,all,1,"plate has low controls quality, noted in lab notebook QC notes. Will evaluate",lab notebook
